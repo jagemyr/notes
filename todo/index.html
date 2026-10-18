@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Todo (jagemyr)</title>
+  <link rel="stylesheet" href="todo.css">
+</head>
+<body>
+  <form class="add" id="add-form" autocomplete="off">
+    <input id="new-task" type="text" placeholder="Lägg till uppgift…" aria-label="Ny uppgift" enterkeyhint="enter" disabled>
+    <button id="add-btn" type="submit" aria-label="Lägg till" disabled>
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+  </form>
+
+  <main class="lists">
+    <div class="notice" id="notice" hidden>
+      Den här sidan är en editor för Standard Notes och väntar på att appen ska ansluta.
+      Installera den med adressen till <code>ext.json</code> under Preferences → Plugins → Install Custom Plugin.
+    </div>
+    <div class="locked-banner" id="locked-banner" hidden>Anteckningen är låst.</div>
+
+    <ul class="list" id="open-list" aria-label="Att göra"></ul>
+    <p class="empty" id="empty" hidden>Inga uppgifter kvar.</p>
+
+    <section class="done-section" id="done-section" hidden>
+      <div class="section-head">
+        <h2 id="done-title">Klara</h2>
+        <button type="button" class="link-btn" id="clear-done">Rensa</button>
+      </div>
+      <ul class="list done-list" id="done-list" aria-label="Klara"></ul>
+    </section>
+  </main>
+
+  <footer class="status" role="status" aria-live="polite">
+    <span id="counts">0 kvar</span>
+    <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
+  </footer>
+
+  <template id="task-template">
+    <li class="task">
+      <div class="row">
+        <input type="checkbox" class="check">
+        <button type="button" class="body" aria-expanded="false">
+          <span class="title"></span>
+          <span class="meta"></span>
+        </button>
+      </div>
+      <div class="details" hidden>
+        <label class="field">
+          <span>Uppgift</span>
+          <input type="text" class="d-title" enterkeyhint="done">
+        </label>
+        <div class="field-grid">
+          <label class="field">
+            <span>Upprepas</span>
+            <select class="d-recur"></select>
+          </label>
+          <label class="field">
+            <span>Datum</span>
+            <input type="date" class="d-due">
+          </label>
+        </div>
+        <div class="d-actions">
+          <button type="button" class="link-btn d-clear-date">Ta bort datum</button>
+          <button type="button" class="link-btn danger d-delete">Ta bort uppgift</button>
+        </div>
+      </div>
+    </li>
+  </template>
+
+  <script src="vendor/component-relay.js"></script>
+  <script src="core.js"></script>
+  <script src="todo.js"></script>
+</body>
+</html>

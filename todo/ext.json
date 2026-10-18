@@ -1,0 +1,14 @@
+{
+  "identifier": "se.jagemyr.todo",
+  "name": "Todo (jagemyr)",
+  "content_type": "SN|Component",
+  "area": "editor-editor",
+  "version": "1.0.0",
+  "description": "Att göra-lista där avbockade uppgifter stryks över, med återkommande uppgifter (dagligen, vardagar, varje vecka, varannan vecka, varje månad, varje år).",
+  "url": "https://jagemyr.github.io/notes/todo/index.html",
+  "latest_url": "https://jagemyr.github.io/notes/todo/ext.json",
+  "marketing_url": "https://github.com/jagemyr/notes",
+  "note_type": "task",
+  "file_type": "md",
+  "interchangeable": false
+}

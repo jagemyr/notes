@@ -7,7 +7,26 @@ Egna plugins till [Standard Notes](https://standardnotes.com), publicerade med G
 
 | Plugin | Typ | Installationsadress |
 |---|---|---|
+| Todo | Editor | `https://jagemyr.github.io/notes/todo/ext.json` |
 | Testeditor | Editor | `https://jagemyr.github.io/notes/test-editor/ext.json` |
+
+## Todo
+
+- Avbockade uppgifter stryks över och samlas under **Klara** längst ner.
+- Tryck på en uppgift för att ändra text, datum och upprepning.
+- Upprepning: dagligen, vardagar, varje vecka, varannan vecka, varje månad, varje år.
+  En avbockad återkommande uppgift står överstruken tills nästa datum och kommer då tillbaka oavbockad.
+- **Rensa** tar bort klara engångsuppgifter. Återkommande uppgifter ligger kvar.
+
+Uppgifterna sparas som vanlig text i anteckningen, en per rad, så de går att läsa även i andra editorer:
+
+```
+- [ ] Köp mjölk
+- [ ] Ta ut soporna 🔁 varje vecka 📅 2026-10-20
+- [x] Ring tandläkaren ✅ 2026-10-18
+```
+
+Rader som inte är uppgifter blir uppgifter när listan sparas.
 
 ## Installera
 
@@ -21,6 +40,13 @@ Egna plugins till [Standard Notes](https://standardnotes.com), publicerade med G
 notes/
 ├── .nojekyll              Låter GitHub Pages servera filerna som de är
 ├── index.html             Översiktssida med installationsadresser
+├── todo/
+│   ├── ext.json
+│   ├── index.html
+│   ├── core.js            Textformat, datum och upprepning (utan gränssnitt)
+│   ├── todo.js            Gränssnittet
+│   ├── todo.css
+│   └── vendor/
 └── test-editor/
     ├── ext.json           Beskrivningsfilen som Standard Notes läser
     ├── index.html         Själva editorn
