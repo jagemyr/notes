@@ -288,6 +288,10 @@
       if (parent) li.classList.add('is-done');
       topLi.classList.add('completing');
       setTimeout(render, COMPLETE_ANIMATION_MS);
+    } else if (parent && checked) {
+      // Visa överstrykningen en kort stund innan deluppgiften glider ner.
+      li.classList.add('is-done');
+      setTimeout(render, COMPLETE_ANIMATION_MS);
     } else {
       render();
     }
@@ -624,7 +628,9 @@
     details.hidden = !expanded;
 
     // Deluppgifter visas under öppna uppgifter; i Klara räcker framstegsräknaren.
+    // Återstående deluppgifter överst, klara längst ner (ordningen i texten ändras inte).
     var subs = visibleSubs(task);
+    subs = subs.filter(function (s) { return !s.done; }).concat(subs.filter(function (s) { return s.done; }));
     var subList = li.querySelector('.subtasks');
     if (subs.length && !doneInView) {
       subList.hidden = false;

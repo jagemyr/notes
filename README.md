@@ -24,6 +24,7 @@ Egna plugins till [Standard Notes](https://standardnotes.com), publicerade med G
   En avbockad återkommande uppgift står överstruken tills nästa datum och kommer då tillbaka oavbockad.
 - **Rensa** tar bort klara engångsuppgifter (bara de som syns i filtret). Återkommande uppgifter ligger kvar.
 - **Deluppgifter:** tryck på en uppgift och lägg till deluppgifter, var och en med egen person.
+  Klara deluppgifter stryks över och hamnar längst ner, så att de återstående står överst.
   Huvuduppgiften visar framsteg (t.ex. 2/4 klara) och bockas av automatiskt när alla deluppgifter är klara;
   bockar man av huvuduppgiften bockas alla deluppgifter av. Med ett filter valt syns bara personens egna
   deluppgifter, och när de är klara hamnar uppgiften under Klara för den personen.
