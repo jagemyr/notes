@@ -30,6 +30,13 @@
   // (krypterad i Standard Notes), aldrig i koden.
   var DEFAULT_PEOPLE = ['Pappa', 'Mamma', 'Dotter', 'Son'];
 
+  // Särskilt värde: uppgiften gäller hela familjen och syns i allas filter.
+  var EVERYONE = 'Alla';
+
+  function isEveryone(name) {
+    return String(name || '').trim().toLowerCase() === EVERYONE.toLowerCase();
+  }
+
   var WEEKDAYS = ['sön', 'mån', 'tis', 'ons', 'tors', 'fre', 'lör'];
   var MONTHS = ['jan', 'feb', 'mars', 'apr', 'maj', 'juni', 'juli', 'aug', 'sep', 'okt', 'nov', 'dec'];
 
@@ -63,7 +70,7 @@
     var out = [];
     String(s || '').split(',').forEach(function (part) {
       var n = cleanName(part);
-      if (n && !findPerson(out, n)) out.push(n);
+      if (n && !isEveryone(n) && !findPerson(out, n)) out.push(n);
     });
     return out;
   }
@@ -82,7 +89,7 @@
 
   function addPerson(doc, name) {
     var n = cleanName(name);
-    if (!n || findPerson(doc.people, n)) return false;
+    if (!n || isEveryone(n) || findPerson(doc.people, n)) return false;
     doc.people.push(n);
     return true;
   }
@@ -91,7 +98,7 @@
   function renamePerson(doc, oldName, newName) {
     var n = cleanName(newName);
     var i = doc.people.indexOf(oldName);
-    if (i < 0 || !n) return false;
+    if (i < 0 || !n || isEveryone(n)) return false;
     var clash = findPerson(doc.people, n);
     if (clash && clash !== oldName) return false;
     doc.people[i] = n;
@@ -258,6 +265,10 @@
     // Namn som används i uppgifter men saknas i listan läggs till, så att inget försvinner.
     eachTask(tasks, function (t) {
       if (!t.who) return;
+      if (isEveryone(t.who)) {
+        t.who = EVERYONE;
+        return;
+      }
       var known = findPerson(list, t.who);
       if (known) t.who = known;
       else list.push(t.who);
@@ -433,6 +444,7 @@
   var api = {
     RECURRENCES: RECURRENCES,
     DEFAULT_PEOPLE: DEFAULT_PEOPLE,
+    EVERYONE: EVERYONE,
     parseDocument: parseDocument,
     serializeDocument: serializeDocument,
     cleanName: cleanName,

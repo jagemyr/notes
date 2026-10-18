@@ -73,6 +73,7 @@
   }
 
   function personClass(name) {
+    if (name === C.EVERYONE) return 'p-all';
     var i = state.people.indexOf(name);
     return i >= 0 ? 'p' + (i % 6) : '';
   }
@@ -81,15 +82,20 @@
     return { people: state.people, tasks: state.tasks };
   }
 
+  // Uppgifter märkta Alla hör till var och en.
+  function belongsToFilter(who) {
+    return who === state.filter || who === C.EVERYONE;
+  }
+
   function ownsTask(task) {
-    return !state.filter || task.who === state.filter;
+    return !state.filter || belongsToFilter(task.who);
   }
 
   /** Deluppgifter som syns: alla, eller bara filtrets persons om huvuduppgiften är någon annans. */
   function visibleSubs(task) {
     var subs = task.subtasks || [];
     if (ownsTask(task)) return subs;
-    return subs.filter(function (s) { return s.who === state.filter; });
+    return subs.filter(function (s) { return belongsToFilter(s.who); });
   }
 
   function isVisible(task) {
@@ -291,7 +297,7 @@
     var title = input.value.replace(/\s+/g, ' ').trim();
     if (!title || state.locked) return;
     // Med ett filter valt får deluppgiften den personen, om inte hela huvuduppgiften redan är personens.
-    var who = state.filter && parent.who !== state.filter ? state.filter : null;
+    var who = state.filter && !belongsToFilter(parent.who) ? state.filter : null;
     parent.subtasks.push({ id: state.nextId++, title: title, done: false, who: who, recur: null, due: null, doneDate: null });
     input.value = '';
     C.syncParent(parent, C.today());
@@ -629,6 +635,7 @@
       li.querySelector('.d-title').value = task.title;
       var whoSelect = li.querySelector('.d-who');
       whoSelect.appendChild(new Option('Ingen', ''));
+      whoSelect.appendChild(new Option('Alla', C.EVERYONE));
       state.people.forEach(function (name) {
         whoSelect.appendChild(new Option(name, name));
       });
@@ -665,6 +672,7 @@
       li.querySelector('.d-title').value = sub.title;
       var whoSelect = li.querySelector('.d-who');
       whoSelect.appendChild(new Option('Ingen', ''));
+      whoSelect.appendChild(new Option('Alla', C.EVERYONE));
       state.people.forEach(function (name) {
         whoSelect.appendChild(new Option(name, name));
       });

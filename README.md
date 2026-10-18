@@ -15,6 +15,7 @@ Egna plugins till [Standard Notes](https://standardnotes.com), publicerade med G
 - Avbockade uppgifter stryks över och samlas under **Klara** längst ner.
 - Välj vem uppgiften gäller. Knapparna överst filtrerar listan per person, och filtret sparas per enhet.
   Nya uppgifter får den person som är vald i filtret.
+- **Alla** i Vem-listan betyder hela familjen: uppgiften syns i allas filter och den som gör den bockar av den för alla.
 - Personerna heter Pappa, Mamma, Dotter och Son från början. Pennan sist i raden byter namn,
   lägger till eller tar bort personer. **Egna namn sparas i anteckningen** (krypterad i Standard Notes),
   aldrig i koden eller i det här repot.

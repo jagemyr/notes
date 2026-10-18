@@ -83,6 +83,7 @@ button, input, select { font: inherit; color: inherit; }
 .p3 { --person: #1f9d5c; }
 .p4 { --person: #d9822b; }
 .p5 { --person: #1a9bb0; }
+.p-all { --person: var(--fg); }
 
 .chip.chip-edit {
   flex: none;
