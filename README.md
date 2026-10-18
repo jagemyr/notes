@@ -13,20 +13,22 @@ Egna plugins till [Standard Notes](https://standardnotes.com), publicerade med G
 ## Todo
 
 - Avbockade uppgifter stryks över och samlas under **Klara** längst ner.
-- Tryck på en uppgift för att ändra text, datum och upprepning.
+- Välj vem uppgiften gäller: Pappa, Mamma, Dotter eller Son. Knapparna överst filtrerar listan per person,
+  och filtret sparas per enhet. Nya uppgifter får den person som är vald i filtret.
+- Tryck på en uppgift för att ändra text, person, datum och upprepning.
 - Upprepning: dagligen, vardagar, varje vecka, varannan vecka, varje månad, varje år.
   En avbockad återkommande uppgift står överstruken tills nästa datum och kommer då tillbaka oavbockad.
-- **Rensa** tar bort klara engångsuppgifter. Återkommande uppgifter ligger kvar.
+- **Rensa** tar bort klara engångsuppgifter (bara de som syns i filtret). Återkommande uppgifter ligger kvar.
 
 Uppgifterna sparas som vanlig text i anteckningen, en per rad, så de går att läsa även i andra editorer:
 
 ```
 - [ ] Köp mjölk
-- [ ] Ta ut soporna 🔁 varje vecka 📅 2026-10-20
+- [ ] Ta ut soporna 👤 Son 🔁 varje vecka 📅 2026-10-20
 - [x] Ring tandläkaren ✅ 2026-10-18
 ```
 
-Rader som inte är uppgifter blir uppgifter när listan sparas.
+Rader som inte är uppgifter blir uppgifter när listan sparas. Namnen på personerna ändras i `PEOPLE` överst i `todo/core.js`.
 
 ## Installera
 

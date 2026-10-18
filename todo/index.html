@@ -14,6 +14,8 @@
     </button>
   </form>
 
+  <nav class="filters" id="filters" aria-label="Visa uppgifter för"></nav>
+
   <main class="lists">
     <div class="notice" id="notice" hidden>
       Den här sidan är en editor för Standard Notes och väntar på att appen ska ansluta.
@@ -53,6 +55,10 @@
           <input type="text" class="d-title" enterkeyhint="done">
         </label>
         <div class="field-grid">
+          <label class="field">
+            <span>Vem</span>
+            <select class="d-who"></select>
+          </label>
           <label class="field">
             <span>Upprepas</span>
             <select class="d-recur"></select>

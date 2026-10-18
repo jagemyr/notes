@@ -27,8 +27,12 @@
     saveState: document.getElementById('save-state'),
     notice: document.getElementById('notice'),
     lockedBanner: document.getElementById('locked-banner'),
-    template: document.getElementById('task-template')
+    template: document.getElementById('task-template'),
+    filters: document.getElementById('filters')
   };
+
+  // Filtret sparas per enhet, så att t.ex. dotterns telefon kan visa bara hennes uppgifter.
+  var FILTER_KEY = 'se.jagemyr.todo.filter';
 
   var state = {
     tasks: [],
@@ -38,8 +42,36 @@
     locked: false,
     lastSentText: null,
     today: C.today(),
-    connected: false
+    connected: false,
+    filter: loadFilter()
   };
+
+  function loadFilter() {
+    try {
+      var v = window.localStorage.getItem(FILTER_KEY);
+      return C.PEOPLE.indexOf(v) >= 0 ? v : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function storeFilter(v) {
+    try {
+      if (v) window.localStorage.setItem(FILTER_KEY, v);
+      else window.localStorage.removeItem(FILTER_KEY);
+    } catch (e) {
+      // Ingen lagring tillgänglig: filtret gäller bara tills editorn stängs.
+    }
+  }
+
+  function personClass(name) {
+    var i = C.PEOPLE.indexOf(name);
+    return i >= 0 ? 'p' + i : '';
+  }
+
+  function isVisible(task) {
+    return !state.filter || task.who === state.filter;
+  }
 
   var relay = new ComponentRelay({
     targetWindow: window,
@@ -138,7 +170,8 @@
     event.preventDefault();
     var title = el.input.value.replace(/\s+/g, ' ').trim();
     if (!title || state.locked) return;
-    state.tasks.unshift({ id: state.nextId++, title: title, done: false, recur: null, due: null, doneDate: null });
+    // Med ett filter valt får den nya uppgiften den personen.
+    state.tasks.unshift({ id: state.nextId++, title: title, done: false, who: state.filter, recur: null, due: null, doneDate: null });
     el.input.value = '';
     render();
     save();
@@ -178,7 +211,13 @@
       return;
     }
 
-    if (t.classList.contains('d-recur')) {
+    if (t.classList.contains('d-who')) {
+      task.who = t.value || null;
+      // Om uppgiften byter till någon annan än filtret försvinner den ur vyn; stäng då detaljerna.
+      if (!isVisible(task)) state.expandedId = null;
+      save();
+      render();
+    } else if (t.classList.contains('d-recur')) {
       task.recur = t.value || null;
       save();
       render();
@@ -249,7 +288,8 @@
     }
     resetClearButton();
     // Återkommande uppgifter ligger kvar, de kommer ju tillbaka.
-    state.tasks = state.tasks.filter(function (t) { return !t.done || t.recur; });
+    // Med ett filter valt rensas bara de uppgifter som syns.
+    state.tasks = state.tasks.filter(function (t) { return !t.done || t.recur || !isVisible(t); });
     save();
     render();
   });
@@ -275,10 +315,45 @@
 
   // ---------- Rendering ----------
 
+  // ---------- Filter per person ----------
+
+  el.filters.addEventListener('click', function (event) {
+    var chip = event.target.closest('.chip');
+    if (!chip) return;
+    state.filter = chip.dataset.who || null;
+    storeFilter(state.filter);
+    state.expandedId = null;
+    resetClearButton();
+    render();
+  });
+
+  function renderFilters() {
+    var frag = document.createDocumentFragment();
+    [null].concat(C.PEOPLE).forEach(function (name) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip' + (name ? ' ' + personClass(name) : '');
+      b.dataset.who = name || '';
+      b.setAttribute('aria-pressed', String(state.filter === name));
+      if (name) {
+        var dot = document.createElement('span');
+        dot.className = 'dot';
+        b.appendChild(dot);
+      }
+      b.appendChild(document.createTextNode(name || 'Alla'));
+      frag.appendChild(b);
+    });
+    el.filters.replaceChildren(frag);
+  }
+
   function render() {
-    var open = state.tasks.filter(function (t) { return !t.done; });
-    var done = state.tasks.filter(function (t) { return t.done; });
+    var visible = state.tasks.filter(isVisible);
+    var open = visible.filter(function (t) { return !t.done; });
+    var done = visible.filter(function (t) { return t.done; });
     var hasNote = Boolean(state.note);
+
+    renderFilters();
+    el.input.placeholder = state.filter ? 'Lägg till uppgift för ' + state.filter + '…' : 'Lägg till uppgift…';
 
     el.input.disabled = !hasNote || state.locked;
     el.addBtn.disabled = !hasNote || state.locked;
@@ -289,7 +364,11 @@
     fillList(el.doneList, done);
 
     el.empty.hidden = !hasNote || open.length > 0;
-    el.empty.textContent = state.tasks.length ? 'Allt klart!' : 'Inga uppgifter ännu.';
+    if (state.filter) {
+      el.empty.textContent = visible.length ? 'Allt klart för ' + state.filter + '!' : 'Inga uppgifter för ' + state.filter + '.';
+    } else {
+      el.empty.textContent = state.tasks.length ? 'Allt klart!' : 'Inga uppgifter ännu.';
+    }
     el.doneSection.hidden = done.length === 0;
     el.doneTitle.textContent = 'Klara · ' + done.length;
     var clearable = done.some(function (t) { return !t.recur; });
@@ -326,8 +405,14 @@
     details.hidden = !expanded;
     if (expanded) {
       li.querySelector('.d-title').value = task.title;
+      var whoSelect = li.querySelector('.d-who');
+      whoSelect.appendChild(new Option('Ingen', ''));
+      C.PEOPLE.forEach(function (name) {
+        whoSelect.appendChild(new Option(name, name));
+      });
+      whoSelect.value = task.who || '';
       var select = li.querySelector('.d-recur');
-      select.appendChild(new Option('Ingen upprepning', ''));
+      select.appendChild(new Option('Ingen', ''));
       C.RECURRENCES.forEach(function (r) {
         select.appendChild(new Option(r.label, r.key));
       });
@@ -340,6 +425,16 @@
 
   function renderMeta(meta, task) {
     var parts = [];
+    // Personen visas inte när listan redan är filtrerad på den personen.
+    if (task.who && state.filter !== task.who) {
+      var who = document.createElement('span');
+      who.className = 'who ' + personClass(task.who);
+      var dot = document.createElement('span');
+      dot.className = 'dot';
+      who.appendChild(dot);
+      who.appendChild(document.createTextNode(task.who));
+      parts.push(who);
+    }
     if (task.recur) {
       parts.push(span('↻ ' + C.recurLabel(task.recur), ''));
     }

@@ -6,6 +6,7 @@
  *   - [ ] Köp mjölk
  *   - [ ] Ta ut soporna 🔁 varje vecka 📅 2026-10-20
  *   - [x] Ring tandläkaren ✅ 2026-10-18
+ *   - [ ] Städa rummet 👤 Son 🔁 varje vecka
  */
 (function (root) {
   'use strict';
@@ -19,6 +20,9 @@
     { key: 'varje år', label: 'Varje år' }
   ];
 
+  // Vem uppgiften gäller. Ändra här för att byta namn eller lägga till fler.
+  var PEOPLE = ['Pappa', 'Mamma', 'Dotter', 'Son'];
+
   var WEEKDAYS = ['sön', 'mån', 'tis', 'ons', 'tors', 'fre', 'lör'];
   var MONTHS = ['jan', 'feb', 'mars', 'apr', 'maj', 'juni', 'juli', 'aug', 'sep', 'okt', 'nov', 'dec'];
 
@@ -27,6 +31,15 @@
   var RECUR_RE = /\s*🔁\s*(dagligen|vardagar|varje vecka|varannan vecka|varje månad|varje år)/i;
   var DUE_RE = /\s*📅\s*(\d{4}-\d{2}-\d{2})/;
   var DONE_RE = /\s*✅\s*(\d{4}-\d{2}-\d{2})/;
+  var WHO_RE = new RegExp('\\s*👤\\s*(' + PEOPLE.join('|') + ')(?=\\s|$)', 'i');
+
+  function canonicalPerson(name) {
+    var lower = String(name).toLowerCase();
+    for (var i = 0; i < PEOPLE.length; i++) {
+      if (PEOPLE[i].toLowerCase() === lower) return PEOPLE[i];
+    }
+    return null;
+  }
 
   // ---------- Datum (lokal tid, format ÅÅÅÅ-MM-DD) ----------
 
@@ -113,7 +126,12 @@
       var recur = null;
       var due = null;
       var doneDate = null;
+      var who = null;
       var r;
+      if ((r = WHO_RE.exec(rest))) {
+        who = canonicalPerson(r[1]);
+        rest = rest.replace(WHO_RE, '');
+      }
       if ((r = RECUR_RE.exec(rest))) {
         recur = r[1].toLowerCase();
         rest = rest.replace(RECUR_RE, '');
@@ -131,13 +149,14 @@
       if (!title) {
         return;
       }
-      tasks.push({ title: title, done: done, recur: recur, due: due, doneDate: done ? doneDate : null });
+      tasks.push({ title: title, done: done, who: who, recur: recur, due: due, doneDate: done ? doneDate : null });
     });
     return tasks;
   }
 
   function serializeTask(t) {
     var line = '- [' + (t.done ? 'x' : ' ') + '] ' + t.title.replace(/\s*\n\s*/g, ' ').trim();
+    if (t.who) line += ' 👤 ' + t.who;
     if (t.recur) line += ' 🔁 ' + t.recur;
     if (t.due) line += ' 📅 ' + t.due;
     if (t.done && t.doneDate) line += ' ✅ ' + t.doneDate;
@@ -247,6 +266,7 @@
 
   var api = {
     RECURRENCES: RECURRENCES,
+    PEOPLE: PEOPLE,
     parse: parse,
     serialize: serialize,
     complete: complete,
