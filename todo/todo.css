@@ -158,7 +158,7 @@ button, input, select { font: inherit; color: inherit; }
   flex: 1;
   min-width: 0;
   display: flex;
-  gap: 6px;
+  gap: 5px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -170,9 +170,9 @@ button, input, select { font: inherit; color: inherit; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   height: 34px;
-  padding: 0 9px;
+  padding: 0 8px;
   border: 1px solid var(--border);
   border-radius: 17px;
   background: transparent;
@@ -368,6 +368,54 @@ button, input, select { font: inherit; color: inherit; }
 .link-btn.danger { color: var(--danger); }
 .link-btn.confirm { font-weight: 700; }
 .link-btn:disabled { visibility: hidden; }
+
+/* ---------- Deluppgifter ---------- */
+
+.subtasks {
+  list-style: none;
+  margin: -4px 0 8px;
+  padding: 0 0 0 calc(40px + env(safe-area-inset-left));
+}
+
+.task.subtask { border-bottom: 0; }
+
+.subtask .row { padding-left: 0; }
+
+.subtask .check { width: 36px; height: 36px; }
+.subtask .check::before { width: 18px; height: 18px; }
+.subtask .check:checked::before { background-size: 13px; }
+
+.subtask .body { min-height: 36px; padding: 6px 8px 6px 0; }
+.subtask .title { font-size: 0.95em; }
+
+.subtask.is-done .title {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  color: var(--muted);
+}
+
+.subtask .details { padding-left: 36px; }
+
+.meta .progress { font-weight: 600; }
+
+.add-sub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.add-sub input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--field-bg);
+  outline: none;
+}
+
+.add-sub input:focus { border-color: var(--accent); }
 
 /* ---------- Klara ---------- */
 

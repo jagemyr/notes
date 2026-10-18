@@ -9,6 +9,10 @@
  *   - [ ] Städa rummet 👤 Son 🔁 varje vecka
  *
  * Egna namn på personerna står på en egen rad överst, t.ex. "👥 Anna, Bo".
+ * Deluppgifter är indragna rader under sin huvuduppgift:
+ *   - [ ] Städdag 🔁 varje vecka
+ *     - [ ] Dammsuga 👤 Son
+ *     - [x] Handla 👤 Pappa ✅ 2026-10-18
  */
 (function (root) {
   'use strict';
@@ -68,6 +72,14 @@
     return a.length === b.length && a.every(function (n, i) { return n === b[i]; });
   }
 
+  /** Alla uppgifter inklusive deluppgifter. */
+  function eachTask(tasks, fn) {
+    tasks.forEach(function (t) {
+      fn(t, null);
+      (t.subtasks || []).forEach(function (s) { fn(s, t); });
+    });
+  }
+
   function addPerson(doc, name) {
     var n = cleanName(name);
     if (!n || findPerson(doc.people, n)) return false;
@@ -83,7 +95,7 @@
     var clash = findPerson(doc.people, n);
     if (clash && clash !== oldName) return false;
     doc.people[i] = n;
-    doc.tasks.forEach(function (t) {
+    eachTask(doc.tasks, function (t) {
       if (t.who === oldName) t.who = n;
     });
     return true;
@@ -94,7 +106,7 @@
     var i = doc.people.indexOf(name);
     if (i < 0) return false;
     doc.people.splice(i, 1);
-    doc.tasks.forEach(function (t) {
+    eachTask(doc.tasks, function (t) {
       if (t.who === name) t.who = null;
     });
     return true;
@@ -167,10 +179,15 @@
 
   function parseLines(lines) {
     var tasks = [];
+    var parent = null;
+    var parentIndent = 0;
     lines.forEach(function (line) {
       if (!line.trim()) {
         return;
       }
+      // Rad med större indrag än huvuduppgiften = deluppgift (bara en nivå; djupare plattas ut).
+      var indent = line.match(/^[ \t]*/)[0].replace(/\t/g, '    ').length;
+      var indented = parent !== null && indent > parentIndent;
       var done = false;
       var rest;
       var m = TASK_RE.exec(line);
@@ -208,7 +225,15 @@
       if (!title) {
         return;
       }
-      tasks.push({ title: title, done: done, who: who, recur: recur, due: due, doneDate: done ? doneDate : null });
+      var task = { title: title, done: done, who: who, recur: recur, due: due, doneDate: done ? doneDate : null };
+      if (indented) {
+        parent.subtasks.push(task);
+      } else {
+        task.subtasks = [];
+        tasks.push(task);
+        parent = task;
+        parentIndent = indent;
+      }
     });
     return tasks;
   }
@@ -231,7 +256,7 @@
     var list = people || DEFAULT_PEOPLE.slice();
     var tasks = parseLines(lines);
     // Namn som används i uppgifter men saknas i listan läggs till, så att inget försvinner.
-    tasks.forEach(function (t) {
+    eachTask(tasks, function (t) {
       if (!t.who) return;
       var known = findPerson(list, t.who);
       if (known) t.who = known;
@@ -244,13 +269,19 @@
     return parseDocument(text).tasks;
   }
 
-  function serializeTask(t) {
-    var line = '- [' + (t.done ? 'x' : ' ') + '] ' + t.title.replace(/\s*\n\s*/g, ' ').trim();
+  function serializeLine(t, indent) {
+    var line = indent + '- [' + (t.done ? 'x' : ' ') + '] ' + t.title.replace(/\s*\n\s*/g, ' ').trim();
     if (t.who) line += ' 👤 ' + t.who;
     if (t.recur) line += ' 🔁 ' + t.recur;
     if (t.due) line += ' 📅 ' + t.due;
     if (t.done && t.doneDate) line += ' ✅ ' + t.doneDate;
     return line;
+  }
+
+  function serializeTask(t) {
+    return [serializeLine(t, '')].concat((t.subtasks || []).map(function (s) {
+      return serializeLine(s, '  ');
+    })).join('\n');
   }
 
   function serialize(tasks) {
@@ -275,6 +306,41 @@
   function uncomplete(task) {
     task.done = false;
     task.doneDate = null;
+  }
+
+  /** Bocka av huvuduppgift: alla deluppgifter bockas av också. */
+  function completeTree(task, todayIso) {
+    complete(task, todayIso);
+    (task.subtasks || []).forEach(function (s) {
+      if (!s.done) complete(s, todayIso);
+    });
+  }
+
+  /** Bocka ur huvuduppgift: deluppgifterna öppnas igen. */
+  function uncompleteTree(task) {
+    uncomplete(task);
+    (task.subtasks || []).forEach(uncomplete);
+  }
+
+  /** Huvuduppgiften är klar exakt när alla deluppgifter är klara. Returnerar true om den ändrades. */
+  function syncParent(task, todayIso) {
+    var subs = task.subtasks || [];
+    if (!subs.length) return false;
+    var allDone = subs.every(function (s) { return s.done; });
+    if (allDone && !task.done) {
+      complete(task, todayIso);
+      return true;
+    }
+    if (!allDone && task.done) {
+      uncomplete(task);
+      return true;
+    }
+    return false;
+  }
+
+  function progress(task) {
+    var subs = task.subtasks || [];
+    return { done: subs.filter(function (s) { return s.done; }).length, total: subs.length };
   }
 
   /**
@@ -316,6 +382,8 @@
         t.done = false;
         t.doneDate = null;
         t.due = back;
+        // En återkommande huvuduppgift börjar om: alla deluppgifter öppnas.
+        (t.subtasks || []).forEach(uncomplete);
         changed = true;
       }
     });
@@ -375,6 +443,11 @@
     serialize: serialize,
     complete: complete,
     uncomplete: uncomplete,
+    completeTree: completeTree,
+    uncompleteTree: uncompleteTree,
+    syncParent: syncParent,
+    progress: progress,
+    eachTask: eachTask,
     returnDate: returnDate,
     rollover: rollover,
     advance: advance,

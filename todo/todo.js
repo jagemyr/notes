@@ -28,6 +28,7 @@
     notice: document.getElementById('notice'),
     lockedBanner: document.getElementById('locked-banner'),
     template: document.getElementById('task-template'),
+    subTemplate: document.getElementById('subtask-template'),
     filters: document.getElementById('filters'),
     editPeople: document.getElementById('edit-people'),
     peoplePanel: document.getElementById('people-panel'),
@@ -80,8 +81,26 @@
     return { people: state.people, tasks: state.tasks };
   }
 
-  function isVisible(task) {
+  function ownsTask(task) {
     return !state.filter || task.who === state.filter;
+  }
+
+  /** Deluppgifter som syns: alla, eller bara filtrets persons om huvuduppgiften är någon annans. */
+  function visibleSubs(task) {
+    var subs = task.subtasks || [];
+    if (ownsTask(task)) return subs;
+    return subs.filter(function (s) { return s.who === state.filter; });
+  }
+
+  function isVisible(task) {
+    return ownsTask(task) || visibleSubs(task).length > 0;
+  }
+
+  /** Klar i den här vyn: själva uppgiften, eller alla ens egna deluppgifter i någon annans uppgift. */
+  function isDoneInView(task) {
+    if (task.done || ownsTask(task)) return task.done;
+    var subs = visibleSubs(task);
+    return subs.length > 0 && subs.every(function (s) { return s.done; });
   }
 
   var relay = new ComponentRelay({
@@ -141,6 +160,7 @@
     state.people = parsed.people;
     state.tasks = parsed.tasks.map(function (t) {
       t.id = state.nextId++;
+      t.subtasks.forEach(function (s) { s.id = state.nextId++; });
       return t;
     });
     // Behåll öppen detaljruta om samma uppgift finns kvar.
@@ -184,7 +204,7 @@
     var title = el.input.value.replace(/\s+/g, ' ').trim();
     if (!title || state.locked) return;
     // Med ett filter valt får den nya uppgiften den personen.
-    state.tasks.unshift({ id: state.nextId++, title: title, done: false, who: state.filter, recur: null, due: null, doneDate: null });
+    state.tasks.unshift({ id: state.nextId++, title: title, done: false, who: state.filter, recur: null, due: null, doneDate: null, subtasks: [] });
     el.input.value = '';
     render();
     save();
@@ -209,25 +229,15 @@
     var t = event.target;
 
     if (t.classList.contains('check')) {
-      if (t.checked) {
-        C.complete(task, C.today());
-        if (state.expandedId === task.id) state.expandedId = null;
-        save();
-        var li = t.closest('.task');
-        li.classList.add('completing');
-        setTimeout(render, COMPLETE_ANIMATION_MS);
-      } else {
-        C.uncomplete(task);
-        save();
-        render();
-      }
+      onCheck(task, t.checked, t.closest('.task'));
       return;
     }
 
     if (t.classList.contains('d-who')) {
       task.who = t.value || null;
       // Om uppgiften byter till någon annan än filtret försvinner den ur vyn; stäng då detaljerna.
-      if (!isVisible(task)) state.expandedId = null;
+      var top = findParent(task.id) || task;
+      if (!isVisible(top) || (top !== task && visibleSubs(top).indexOf(task) < 0)) state.expandedId = null;
       save();
       render();
     } else if (t.classList.contains('d-recur')) {
@@ -239,6 +249,56 @@
       save();
       render();
     }
+  }
+
+  function onCheck(task, checked, li) {
+    var today = C.today();
+    var parent = findParent(task.id);
+    var top = parent || task;
+    var wasDone = isDoneInView(top);
+
+    if (parent) {
+      if (checked) C.complete(task, today);
+      else C.uncomplete(task);
+      C.syncParent(parent, today);
+    } else if (ownsTask(task)) {
+      // Hela uppgiften med alla deluppgifter.
+      if (checked) C.completeTree(task, today);
+      else C.uncompleteTree(task);
+    } else {
+      // Någon annans uppgift i filtrerad vy: bara de egna deluppgifterna påverkas.
+      visibleSubs(task).forEach(function (s) {
+        if (checked) C.complete(s, today);
+        else C.uncomplete(s);
+      });
+      C.syncParent(task, today);
+    }
+    save();
+
+    var nowDone = isDoneInView(top);
+    if (!wasDone && nowDone) {
+      if (state.expandedId === top.id) state.expandedId = null;
+      var topLi = parent ? li.parentElement.closest('.task') : li;
+      if (parent) li.classList.add('is-done');
+      topLi.classList.add('completing');
+      setTimeout(render, COMPLETE_ANIMATION_MS);
+    } else {
+      render();
+    }
+  }
+
+  function addSubtask(parent, input) {
+    var title = input.value.replace(/\s+/g, ' ').trim();
+    if (!title || state.locked) return;
+    // Med ett filter valt får deluppgiften den personen, om inte hela huvuduppgiften redan är personens.
+    var who = state.filter && parent.who !== state.filter ? state.filter : null;
+    parent.subtasks.push({ id: state.nextId++, title: title, done: false, who: who, recur: null, due: null, doneDate: null });
+    input.value = '';
+    C.syncParent(parent, C.today());
+    save();
+    render();
+    var again = el.openList.querySelector('.task[data-id="' + parent.id + '"] .d-new-sub');
+    if (again) again.focus({ preventScroll: true });
   }
 
   function onListInput(event) {
@@ -253,6 +313,12 @@
   }
 
   function onListKeydown(event) {
+    if (event.key === 'Enter' && event.target.classList.contains('d-new-sub')) {
+      event.preventDefault();
+      var parent = taskFromEvent(event);
+      if (parent) addSubtask(parent, event.target);
+      return;
+    }
     if (event.key === 'Enter' && event.target.classList.contains('d-title')) {
       event.preventDefault();
       state.expandedId = null;
@@ -276,12 +342,20 @@
       return;
     }
 
-    if (t.closest('.d-clear-date')) {
+    if (t.closest('.d-add-sub')) {
+      addSubtask(task, t.closest('.details').querySelector('.d-new-sub'));
+    } else if (t.closest('.d-clear-date')) {
       task.due = null;
       save();
       render();
     } else if (t.closest('.d-delete')) {
-      state.tasks = state.tasks.filter(function (x) { return x !== task; });
+      var parent = findParent(task.id);
+      if (parent) {
+        parent.subtasks = parent.subtasks.filter(function (x) { return x !== task; });
+        C.syncParent(parent, C.today());
+      } else {
+        state.tasks = state.tasks.filter(function (x) { return x !== task; });
+      }
       state.expandedId = null;
       save();
       render();
@@ -302,7 +376,7 @@
     resetClearButton();
     // Återkommande uppgifter ligger kvar, de kommer ju tillbaka.
     // Med ett filter valt rensas bara de uppgifter som syns.
-    state.tasks = state.tasks.filter(function (t) { return !t.done || t.recur || !isVisible(t); });
+    state.tasks = state.tasks.filter(function (t) { return !t.done || t.recur || !ownsTask(t); });
     save();
     render();
   });
@@ -362,6 +436,14 @@
       frag.appendChild(b);
     });
     el.filters.replaceChildren(frag);
+    // Se till att den valda personen syns om raden är bredare än skärmen.
+    var active = el.filters.querySelector('.chip[aria-pressed="true"]');
+    if (active) {
+      var r = active.getBoundingClientRect();
+      var rr = el.filters.getBoundingClientRect();
+      if (r.right > rr.right) el.filters.scrollLeft += r.right - rr.right + 4;
+      else if (r.left < rr.left) el.filters.scrollLeft -= rr.left - r.left + 4;
+    }
     el.editPeople.hidden = state.locked || !state.note;
     el.editPeople.setAttribute('aria-pressed', String(state.editingPeople));
   }
@@ -477,8 +559,8 @@
     }
     if (state.locked) state.editingPeople = false;
     var visible = state.tasks.filter(isVisible);
-    var open = visible.filter(function (t) { return !t.done; });
-    var done = visible.filter(function (t) { return t.done; });
+    var open = visible.filter(function (t) { return !isDoneInView(t); });
+    var done = visible.filter(isDoneInView);
     var hasNote = Boolean(state.note);
 
     renderFilters();
@@ -501,7 +583,7 @@
     }
     el.doneSection.hidden = done.length === 0;
     el.doneTitle.textContent = 'Klara · ' + done.length;
-    var clearable = done.some(function (t) { return !t.recur; });
+    var clearable = done.some(function (t) { return t.done && !t.recur && ownsTask(t); });
     el.clearDone.disabled = state.locked || !clearable;
 
     el.counts.textContent = open.length + ' kvar' + (done.length ? ' · ' + done.length + ' klara' : '');
@@ -519,20 +601,30 @@
     var li = el.template.content.firstElementChild.cloneNode(true);
     li.dataset.id = task.id;
 
+    var doneInView = isDoneInView(task);
     var check = li.querySelector('.check');
-    check.checked = task.done;
+    check.checked = doneInView;
     check.disabled = state.locked;
-    check.setAttribute('aria-label', (task.done ? 'Markera som ej klar: ' : 'Markera som klar: ') + task.title);
+    check.setAttribute('aria-label', (doneInView ? 'Markera som ej klar: ' : 'Markera som klar: ') + task.title);
 
     var body = li.querySelector('.body');
-    body.disabled = state.locked || task.done;
+    body.disabled = state.locked || doneInView;
     li.querySelector('.title').textContent = task.title;
     renderMeta(li.querySelector('.meta'), task);
 
-    var expanded = state.expandedId === task.id && !task.done && !state.locked;
+    var expanded = state.expandedId === task.id && !doneInView && !state.locked;
     body.setAttribute('aria-expanded', String(expanded));
     var details = li.querySelector('.details');
     details.hidden = !expanded;
+
+    // Deluppgifter visas under öppna uppgifter; i Klara räcker framstegsräknaren.
+    var subs = visibleSubs(task);
+    var subList = li.querySelector('.subtasks');
+    if (subs.length && !doneInView) {
+      subList.hidden = false;
+      subs.forEach(function (s) { subList.appendChild(renderSubtask(s)); });
+    }
+
     if (expanded) {
       li.querySelector('.d-title').value = task.title;
       var whoSelect = li.querySelector('.d-who');
@@ -549,6 +641,34 @@
       select.value = task.recur || '';
       li.querySelector('.d-due').value = task.due || '';
       li.querySelector('.d-clear-date').disabled = !task.due;
+    }
+    return li;
+  }
+
+  function renderSubtask(sub) {
+    var li = el.subTemplate.content.firstElementChild.cloneNode(true);
+    li.dataset.id = sub.id;
+    if (sub.done) li.classList.add('is-done');
+    var check = li.querySelector('.check');
+    check.checked = sub.done;
+    check.disabled = state.locked;
+    check.setAttribute('aria-label', (sub.done ? 'Markera som ej klar: ' : 'Markera som klar: ') + sub.title);
+    var body = li.querySelector('.body');
+    body.disabled = state.locked || sub.done;
+    li.querySelector('.title').textContent = sub.title;
+    renderMeta(li.querySelector('.meta'), sub);
+
+    var expanded = state.expandedId === sub.id && !sub.done && !state.locked;
+    body.setAttribute('aria-expanded', String(expanded));
+    li.querySelector('.details').hidden = !expanded;
+    if (expanded) {
+      li.querySelector('.d-title').value = sub.title;
+      var whoSelect = li.querySelector('.d-who');
+      whoSelect.appendChild(new Option('Ingen', ''));
+      state.people.forEach(function (name) {
+        whoSelect.appendChild(new Option(name, name));
+      });
+      whoSelect.value = sub.who || '';
     }
     return li;
   }
@@ -577,6 +697,10 @@
       if (status === 'overdue') label = 'Försenad · ' + label;
       parts.push(span(label, status === 'overdue' ? 'overdue' : status === 'today' ? 'today' : ''));
     }
+    if (task.subtasks && task.subtasks.length) {
+      var pr = C.progress(task);
+      parts.push(span(pr.done + '/' + pr.total + ' klara', 'progress'));
+    }
     parts.forEach(function (node, i) {
       if (i > 0) meta.appendChild(document.createTextNode(' · '));
       meta.appendChild(node);
@@ -597,7 +721,21 @@
   function findTask(id) {
     if (id == null) return null;
     for (var i = 0; i < state.tasks.length; i++) {
-      if (state.tasks[i].id === id) return state.tasks[i];
+      var t = state.tasks[i];
+      if (t.id === id) return t;
+      for (var j = 0; j < (t.subtasks || []).length; j++) {
+        if (t.subtasks[j].id === id) return t.subtasks[j];
+      }
+    }
+    return null;
+  }
+
+  function findParent(id) {
+    for (var i = 0; i < state.tasks.length; i++) {
+      var subs = state.tasks[i].subtasks || [];
+      for (var j = 0; j < subs.length; j++) {
+        if (subs[j].id === id) return state.tasks[i];
+      }
     }
     return null;
   }
