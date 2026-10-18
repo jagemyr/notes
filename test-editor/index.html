@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Testeditor (jagemyr)</title>
+  <link rel="stylesheet" href="editor.css">
+</head>
+<body>
+  <main class="wrap">
+    <div class="notice" id="notice" hidden>
+      Den här sidan är en editor för Standard Notes och väntar på att appen ska ansluta.
+      Installera den med adressen till <code>ext.json</code> under Preferences → Plugins → Install Custom Plugin.
+    </div>
+    <textarea id="editor" aria-label="Anteckning" spellcheck="true" autocomplete="off" autocapitalize="sentences" disabled></textarea>
+  </main>
+  <footer class="status" role="status" aria-live="polite">
+    <span id="counts">0 ord · 0 tecken</span>
+    <span class="status-right">
+      <span id="lock" class="lock" hidden>Låst</span>
+      <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
+    </span>
+  </footer>
+
+  <script src="vendor/component-relay.js"></script>
+  <script src="editor.js"></script>
+</body>
+</html>

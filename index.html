@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Standard Notes-plugins</title>
+  <style>
+    :root { --bg: #ffffff; --fg: #1b1b1f; --muted: #6b6b75; --border: #e3e3e8; --accent: #086dd6; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #16161a; --fg: #ececf1; --muted: #a0a0ab; --border: #2c2c33; --accent: #5aa6ff; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg);
+      font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 640px; margin: 0 auto; padding: 40px 16px; }
+    h1 { font-size: 1.5rem; margin: 0 0 4px; }
+    p { color: var(--muted); margin: 0 0 24px; }
+    .plugin { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .plugin h2 { font-size: 1.05rem; margin: 0 0 4px; }
+    .plugin p { margin: 0 0 12px; font-size: 0.95rem; }
+    code { display: block; padding: 10px 12px; border-radius: 6px; background: color-mix(in srgb, var(--fg) 6%, transparent);
+      font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; user-select: all; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Standard Notes-plugins</h1>
+    <p>Installera i Standard Notes under Preferences → Plugins → Install Custom Plugin och klistra in adressen.</p>
+
+    <section class="plugin">
+      <h2>Testeditor</h2>
+      <p>Enkel texteditor med ord- och teckenräkning.</p>
+      <code>https://jagemyr.github.io/notes/test-editor/ext.json</code>
+    </section>
+  </main>
+</body>
+</html>

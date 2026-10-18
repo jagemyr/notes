@@ -1,0 +1,14 @@
+{
+  "identifier": "se.jagemyr.test-editor",
+  "name": "Testeditor (jagemyr)",
+  "content_type": "SN|Component",
+  "area": "editor-editor",
+  "version": "1.0.0",
+  "description": "Enkel texteditor med ord- och teckenräkning. Byggd för att testa kedjan GitHub Pages → Standard Notes.",
+  "url": "https://jagemyr.github.io/notes/test-editor/index.html",
+  "latest_url": "https://jagemyr.github.io/notes/test-editor/ext.json",
+  "marketing_url": "https://github.com/jagemyr/notes",
+  "note_type": "plain",
+  "file_type": "txt",
+  "interchangeable": true
+}
