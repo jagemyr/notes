@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Todo (jagemyr)</title>
-  <link rel="stylesheet" href="todo.css">
+  <link rel="stylesheet" href="todo.css?v=1.2.0">
 </head>
 <body>
   <form class="add" id="add-form" autocomplete="off">
@@ -14,7 +14,23 @@
     </button>
   </form>
 
-  <nav class="filters" id="filters" aria-label="Visa uppgifter för"></nav>
+  <nav class="filters" aria-label="Visa uppgifter för">
+    <div class="chip-row" id="filters"></div>
+    <button type="button" class="chip chip-edit" id="edit-people" aria-label="Ändra personer" aria-pressed="false" hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+  </nav>
+
+  <section class="people-panel" id="people-panel" hidden aria-labelledby="people-heading">
+    <div class="section-head">
+      <h2 id="people-heading">Personer</h2>
+      <button type="button" class="link-btn" id="people-done">Klar</button>
+    </div>
+    <p class="hint">Namnen sparas i den här anteckningen, inte i pluginets kod.</p>
+    <ul class="people-list" id="people-list"></ul>
+    <form class="add-person" id="add-person" autocomplete="off">
+      <input type="text" id="new-person" placeholder="Lägg till person…" aria-label="Ny person" maxlength="40" enterkeyhint="done">
+      <button type="submit" class="link-btn">Lägg till</button>
+    </form>
+  </section>
 
   <main class="lists">
     <div class="notice" id="notice" hidden>
@@ -76,8 +92,8 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js"></script>
-  <script src="core.js"></script>
-  <script src="todo.js"></script>
+  <script src="vendor/component-relay.js?v=1.2.0"></script>
+  <script src="core.js?v=1.2.0"></script>
+  <script src="todo.js?v=1.2.0"></script>
 </body>
 </html>

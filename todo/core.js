@@ -7,6 +7,8 @@
  *   - [ ] Ta ut soporna 🔁 varje vecka 📅 2026-10-20
  *   - [x] Ring tandläkaren ✅ 2026-10-18
  *   - [ ] Städa rummet 👤 Son 🔁 varje vecka
+ *
+ * Egna namn på personerna står på en egen rad överst, t.ex. "👥 Anna, Bo".
  */
 (function (root) {
   'use strict';
@@ -20,8 +22,9 @@
     { key: 'varje år', label: 'Varje år' }
   ];
 
-  // Vem uppgiften gäller. Ändra här för att byta namn eller lägga till fler.
-  var PEOPLE = ['Pappa', 'Mamma', 'Dotter', 'Son'];
+  // Standardpersoner. Egna namn läggs in i editorn och sparas i anteckningen
+  // (krypterad i Standard Notes), aldrig i koden.
+  var DEFAULT_PEOPLE = ['Pappa', 'Mamma', 'Dotter', 'Son'];
 
   var WEEKDAYS = ['sön', 'mån', 'tis', 'ons', 'tors', 'fre', 'lör'];
   var MONTHS = ['jan', 'feb', 'mars', 'apr', 'maj', 'juni', 'juli', 'aug', 'sep', 'okt', 'nov', 'dec'];
@@ -31,14 +34,70 @@
   var RECUR_RE = /\s*🔁\s*(dagligen|vardagar|varje vecka|varannan vecka|varje månad|varje år)/i;
   var DUE_RE = /\s*📅\s*(\d{4}-\d{2}-\d{2})/;
   var DONE_RE = /\s*✅\s*(\d{4}-\d{2}-\d{2})/;
-  var WHO_RE = new RegExp('\\s*👤\\s*(' + PEOPLE.join('|') + ')(?=\\s|$)', 'i');
+  // Namnet sträcker sig fram till nästa markering eller radens slut.
+  var WHO_RE = /\s*👤\s*(.*?)\s*(?=🔁|📅|✅|👤|$)/u;
+  var PEOPLE_LINE_RE = /^\s*👥\s*(.*)$/u;
 
-  function canonicalPerson(name) {
-    var lower = String(name).toLowerCase();
-    for (var i = 0; i < PEOPLE.length; i++) {
-      if (PEOPLE[i].toLowerCase() === lower) return PEOPLE[i];
+  // ---------- Personer ----------
+
+  function cleanName(name) {
+    return String(name || '')
+      .replace(/[,👤👥🔁📅✅]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function findPerson(list, name) {
+    var lower = cleanName(name).toLowerCase();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].toLowerCase() === lower) return list[i];
     }
     return null;
+  }
+
+  function splitPeople(s) {
+    var out = [];
+    String(s || '').split(',').forEach(function (part) {
+      var n = cleanName(part);
+      if (n && !findPerson(out, n)) out.push(n);
+    });
+    return out;
+  }
+
+  function samePeople(a, b) {
+    return a.length === b.length && a.every(function (n, i) { return n === b[i]; });
+  }
+
+  function addPerson(doc, name) {
+    var n = cleanName(name);
+    if (!n || findPerson(doc.people, n)) return false;
+    doc.people.push(n);
+    return true;
+  }
+
+  /** Byter namn och uppdaterar alla uppgifter med det gamla namnet. */
+  function renamePerson(doc, oldName, newName) {
+    var n = cleanName(newName);
+    var i = doc.people.indexOf(oldName);
+    if (i < 0 || !n) return false;
+    var clash = findPerson(doc.people, n);
+    if (clash && clash !== oldName) return false;
+    doc.people[i] = n;
+    doc.tasks.forEach(function (t) {
+      if (t.who === oldName) t.who = n;
+    });
+    return true;
+  }
+
+  /** Tar bort personen; dennes uppgifter blir utan person. */
+  function removePerson(doc, name) {
+    var i = doc.people.indexOf(name);
+    if (i < 0) return false;
+    doc.people.splice(i, 1);
+    doc.tasks.forEach(function (t) {
+      if (t.who === name) t.who = null;
+    });
+    return true;
   }
 
   // ---------- Datum (lokal tid, format ÅÅÅÅ-MM-DD) ----------
@@ -106,9 +165,9 @@
 
   // ---------- Läsa och skriva text ----------
 
-  function parse(text) {
+  function parseLines(lines) {
     var tasks = [];
-    String(text || '').split(/\r?\n/).forEach(function (line) {
+    lines.forEach(function (line) {
       if (!line.trim()) {
         return;
       }
@@ -129,8 +188,8 @@
       var who = null;
       var r;
       if ((r = WHO_RE.exec(rest))) {
-        who = canonicalPerson(r[1]);
-        rest = rest.replace(WHO_RE, '');
+        who = cleanName(r[1]) || null;
+        rest = rest.replace(WHO_RE, ' ');
       }
       if ((r = RECUR_RE.exec(rest))) {
         recur = r[1].toLowerCase();
@@ -154,6 +213,37 @@
     return tasks;
   }
 
+  /**
+   * Hela anteckningen: en valfri personrad ("👥 Namn, Namn") och uppgifterna.
+   * Utan personrad används standardpersonerna.
+   */
+  function parseDocument(text) {
+    var people = null;
+    var lines = [];
+    String(text || '').split(/\r?\n/).forEach(function (line) {
+      var m = PEOPLE_LINE_RE.exec(line);
+      if (m && people === null) {
+        people = splitPeople(m[1]);
+        return;
+      }
+      lines.push(line);
+    });
+    var list = people || DEFAULT_PEOPLE.slice();
+    var tasks = parseLines(lines);
+    // Namn som används i uppgifter men saknas i listan läggs till, så att inget försvinner.
+    tasks.forEach(function (t) {
+      if (!t.who) return;
+      var known = findPerson(list, t.who);
+      if (known) t.who = known;
+      else list.push(t.who);
+    });
+    return { people: list, tasks: tasks };
+  }
+
+  function parse(text) {
+    return parseDocument(text).tasks;
+  }
+
   function serializeTask(t) {
     var line = '- [' + (t.done ? 'x' : ' ') + '] ' + t.title.replace(/\s*\n\s*/g, ' ').trim();
     if (t.who) line += ' 👤 ' + t.who;
@@ -165,6 +255,14 @@
 
   function serialize(tasks) {
     return tasks.map(serializeTask).join('\n');
+  }
+
+  function serializeDocument(doc) {
+    var lines = [];
+    if (!samePeople(doc.people, DEFAULT_PEOPLE)) {
+      lines.push('👥 ' + doc.people.join(', '));
+    }
+    return lines.concat(doc.tasks.map(serializeTask)).join('\n');
   }
 
   // ---------- Avbockning och återkommande ----------
@@ -266,7 +364,13 @@
 
   var api = {
     RECURRENCES: RECURRENCES,
-    PEOPLE: PEOPLE,
+    DEFAULT_PEOPLE: DEFAULT_PEOPLE,
+    parseDocument: parseDocument,
+    serializeDocument: serializeDocument,
+    cleanName: cleanName,
+    addPerson: addPerson,
+    renamePerson: renamePerson,
+    removePerson: removePerson,
     parse: parse,
     serialize: serialize,
     complete: complete,

@@ -28,7 +28,13 @@
     notice: document.getElementById('notice'),
     lockedBanner: document.getElementById('locked-banner'),
     template: document.getElementById('task-template'),
-    filters: document.getElementById('filters')
+    filters: document.getElementById('filters'),
+    editPeople: document.getElementById('edit-people'),
+    peoplePanel: document.getElementById('people-panel'),
+    peopleList: document.getElementById('people-list'),
+    peopleDone: document.getElementById('people-done'),
+    addPersonForm: document.getElementById('add-person'),
+    newPerson: document.getElementById('new-person')
   };
 
   // Filtret sparas per enhet, så att t.ex. dotterns telefon kan visa bara hennes uppgifter.
@@ -43,13 +49,14 @@
     lastSentText: null,
     today: C.today(),
     connected: false,
-    filter: loadFilter()
+    filter: loadFilter(),
+    people: C.DEFAULT_PEOPLE.slice(),
+    editingPeople: false
   };
 
   function loadFilter() {
     try {
-      var v = window.localStorage.getItem(FILTER_KEY);
-      return C.PEOPLE.indexOf(v) >= 0 ? v : null;
+      return window.localStorage.getItem(FILTER_KEY) || null;
     } catch (e) {
       return null;
     }
@@ -65,8 +72,12 @@
   }
 
   function personClass(name) {
-    var i = C.PEOPLE.indexOf(name);
-    return i >= 0 ? 'p' + i : '';
+    var i = state.people.indexOf(name);
+    return i >= 0 ? 'p' + (i % 6) : '';
+  }
+
+  function doc() {
+    return { people: state.people, tasks: state.tasks };
   }
 
   function isVisible(task) {
@@ -106,7 +117,7 @@
     var textChanged = false;
     if (!note.isMetadataUpdate) {
       var incoming = (note.content && note.content.text) || '';
-      var ours = C.serialize(state.tasks);
+      var ours = C.serializeDocument(doc());
       // Vår egen sparning som kommer tillbaka ska inte rita om listan (då tappar man fokus).
       var isEcho = !isNewNote && (incoming === state.lastSentText || incoming === ours);
       if (!isEcho) {
@@ -126,7 +137,9 @@
 
   function loadTasks(text) {
     var expandedTask = findTask(state.expandedId);
-    state.tasks = C.parse(text).map(function (t) {
+    var parsed = C.parseDocument(text);
+    state.people = parsed.people;
+    state.tasks = parsed.tasks.map(function (t) {
       t.id = state.nextId++;
       return t;
     });
@@ -149,7 +162,7 @@
   function save() {
     if (!state.note || state.locked) return;
     var note = state.note;
-    var text = C.serialize(state.tasks);
+    var text = C.serializeDocument(doc());
     var preview = C.preview(state.tasks);
     setSaveState('Sparar…', '');
     relay.saveItemWithPresave(note, function () {
@@ -327,9 +340,14 @@
     render();
   });
 
+  el.editPeople.addEventListener('click', function () {
+    state.editingPeople = !state.editingPeople;
+    render();
+  });
+
   function renderFilters() {
     var frag = document.createDocumentFragment();
-    [null].concat(C.PEOPLE).forEach(function (name) {
+    [null].concat(state.people).forEach(function (name) {
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'chip' + (name ? ' ' + personClass(name) : '');
@@ -344,15 +362,127 @@
       frag.appendChild(b);
     });
     el.filters.replaceChildren(frag);
+    el.editPeople.hidden = state.locked || !state.note;
+    el.editPeople.setAttribute('aria-pressed', String(state.editingPeople));
+  }
+
+  // ---------- Ändra personer ----------
+
+  el.peopleDone.addEventListener('click', function () {
+    state.editingPeople = false;
+    render();
+  });
+
+  el.addPersonForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (state.locked) return;
+    if (C.addPerson(doc(), el.newPerson.value)) {
+      el.newPerson.value = '';
+      save();
+      render();
+    }
+    el.newPerson.focus();
+  });
+
+  // Byt namn när fältet lämnas eller Enter trycks.
+  el.peopleList.addEventListener('change', function (event) {
+    var input = event.target.closest('.person-name');
+    if (!input || state.locked) return;
+    var oldName = input.dataset.name;
+    var newName = C.cleanName(input.value);
+    if (newName === oldName) {
+      input.value = oldName;
+      return;
+    }
+    if (C.renamePerson(doc(), oldName, newName)) {
+      if (state.filter === oldName) {
+        state.filter = newName;
+        storeFilter(newName);
+      }
+      save();
+      render();
+    } else {
+      input.value = oldName; // tomt eller upptaget namn
+    }
+  });
+
+  el.peopleList.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' && event.target.closest('.person-name')) {
+      event.preventDefault();
+      event.target.blur();
+    }
+  });
+
+  // Ta bort kräver två tryck; personens uppgifter blir utan person.
+  var removeTimer = null;
+  el.peopleList.addEventListener('click', function (event) {
+    var btn = event.target.closest('.person-remove');
+    if (!btn || state.locked) return;
+    if (!btn.classList.contains('confirm')) {
+      el.peopleList.querySelectorAll('.person-remove.confirm').forEach(resetRemoveButton);
+      btn.classList.add('confirm');
+      btn.textContent = 'Säker?';
+      clearTimeout(removeTimer);
+      removeTimer = setTimeout(function () { resetRemoveButton(btn); }, CONFIRM_MS);
+      return;
+    }
+    clearTimeout(removeTimer);
+    var name = btn.dataset.name;
+    C.removePerson(doc(), name);
+    if (state.filter === name) {
+      state.filter = null;
+      storeFilter(null);
+    }
+    save();
+    render();
+  });
+
+  function resetRemoveButton(btn) {
+    btn.classList.remove('confirm');
+    btn.textContent = 'Ta bort';
+  }
+
+  function renderPeoplePanel() {
+    el.peoplePanel.hidden = !state.editingPeople;
+    if (!state.editingPeople) return;
+    var frag = document.createDocumentFragment();
+    state.people.forEach(function (name) {
+      var li = document.createElement('li');
+      li.className = personClass(name);
+      var dot = document.createElement('span');
+      dot.className = 'dot';
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'person-name';
+      input.value = name;
+      input.dataset.name = name;
+      input.maxLength = 40;
+      input.setAttribute('aria-label', 'Namn');
+      input.setAttribute('enterkeyhint', 'done');
+      var remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'link-btn danger person-remove';
+      remove.dataset.name = name;
+      remove.textContent = 'Ta bort';
+      li.append(dot, input, remove);
+      frag.appendChild(li);
+    });
+    el.peopleList.replaceChildren(frag);
   }
 
   function render() {
+    // Ett sparat filter för en person som inte finns i den här listan gäller inte.
+    if (state.note && state.filter && state.people.indexOf(state.filter) < 0) {
+      state.filter = null;
+    }
+    if (state.locked) state.editingPeople = false;
     var visible = state.tasks.filter(isVisible);
     var open = visible.filter(function (t) { return !t.done; });
     var done = visible.filter(function (t) { return t.done; });
     var hasNote = Boolean(state.note);
 
     renderFilters();
+    renderPeoplePanel();
     el.input.placeholder = state.filter ? 'Lägg till uppgift för ' + state.filter + '…' : 'Lägg till uppgift…';
 
     el.input.disabled = !hasNote || state.locked;
@@ -407,7 +537,7 @@
       li.querySelector('.d-title').value = task.title;
       var whoSelect = li.querySelector('.d-who');
       whoSelect.appendChild(new Option('Ingen', ''));
-      C.PEOPLE.forEach(function (name) {
+      state.people.forEach(function (name) {
         whoSelect.appendChild(new Option(name, name));
       });
       whoSelect.value = task.who || '';

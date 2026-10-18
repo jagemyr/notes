@@ -13,8 +13,11 @@ Egna plugins till [Standard Notes](https://standardnotes.com), publicerade med G
 ## Todo
 
 - Avbockade uppgifter stryks över och samlas under **Klara** längst ner.
-- Välj vem uppgiften gäller: Pappa, Mamma, Dotter eller Son. Knapparna överst filtrerar listan per person,
-  och filtret sparas per enhet. Nya uppgifter får den person som är vald i filtret.
+- Välj vem uppgiften gäller. Knapparna överst filtrerar listan per person, och filtret sparas per enhet.
+  Nya uppgifter får den person som är vald i filtret.
+- Personerna heter Pappa, Mamma, Dotter och Son från början. Pennan sist i raden byter namn,
+  lägger till eller tar bort personer. **Egna namn sparas i anteckningen** (krypterad i Standard Notes),
+  aldrig i koden eller i det här repot.
 - Tryck på en uppgift för att ändra text, person, datum och upprepning.
 - Upprepning: dagligen, vardagar, varje vecka, varannan vecka, varje månad, varje år.
   En avbockad återkommande uppgift står överstruken tills nästa datum och kommer då tillbaka oavbockad.
@@ -23,12 +26,13 @@ Egna plugins till [Standard Notes](https://standardnotes.com), publicerade med G
 Uppgifterna sparas som vanlig text i anteckningen, en per rad, så de går att läsa även i andra editorer:
 
 ```
+👥 Pappa, Mamma, Dotter, Son
 - [ ] Köp mjölk
 - [ ] Ta ut soporna 👤 Son 🔁 varje vecka 📅 2026-10-20
 - [x] Ring tandläkaren ✅ 2026-10-18
 ```
 
-Rader som inte är uppgifter blir uppgifter när listan sparas. Namnen på personerna ändras i `PEOPLE` överst i `todo/core.js`.
+Raden med 👥 skrivs bara när personerna har ändrats från standard. Rader som inte är uppgifter blir uppgifter när listan sparas.
 
 ## Installera
 
@@ -63,7 +67,7 @@ Varje plugin ligger i en egen mapp med en egen `ext.json`. Ett nytt plugin lägg
 
 ## Uppdatera ett plugin
 
-Höj `version` i pluginets `ext.json` när något ändras. Standard Notes läser `latest_url` och hämtar nya versioner.
+Höj `version` i pluginets `ext.json` och `?v=` i `url` och i `index.html` när något ändras, så att appen inte visar cachade filer. Standard Notes läser `latest_url` och hämtar nya versioner.
 
 ## Licens
 
