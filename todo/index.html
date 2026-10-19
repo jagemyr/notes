@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Todo (jagemyr)</title>
-  <link rel="stylesheet" href="todo.css?v=1.4.2">
+  <link rel="stylesheet" href="todo.css?v=1.4.3">
 </head>
 <body>
-  <form class="add" id="add-form" autocomplete="off">
+  <div class="add" id="add-form">
     <input id="new-task" type="text" placeholder="Lägg till uppgift…" aria-label="Ny uppgift" enterkeyhint="enter" disabled>
-    <button id="add-btn" type="submit" aria-label="Lägg till" disabled>
+    <button id="add-btn" type="button" aria-label="Lägg till" disabled>
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
     </button>
-  </form>
+  </div>
 
   <nav class="filters" aria-label="Visa uppgifter för">
     <div class="chip-row" id="filters"></div>
@@ -26,10 +26,10 @@
     </div>
     <p class="hint">Namnen sparas i den här anteckningen, inte i pluginets kod.</p>
     <ul class="people-list" id="people-list"></ul>
-    <form class="add-person" id="add-person" autocomplete="off">
+    <div class="add-person" id="add-person">
       <input type="text" id="new-person" placeholder="Lägg till person…" aria-label="Ny person" maxlength="40" enterkeyhint="done">
-      <button type="submit" class="link-btn">Lägg till</button>
-    </form>
+      <button type="button" class="link-btn" id="add-person-btn">Lägg till</button>
+    </div>
   </section>
 
   <main class="lists">
@@ -129,8 +129,8 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=1.4.2"></script>
-  <script src="core.js?v=1.4.2"></script>
-  <script src="todo.js?v=1.4.2"></script>
+  <script src="vendor/component-relay.js?v=1.4.3"></script>
+  <script src="core.js?v=1.4.3"></script>
+  <script src="todo.js?v=1.4.3"></script>
 </body>
 </html>

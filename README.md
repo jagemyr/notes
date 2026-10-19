@@ -83,3 +83,8 @@ Höj `version` i pluginets `ext.json` och `?v=` i `url` och i `index.html` när 
 
 `vendor/component-relay.js` kommer från [@standardnotes/component-relay](https://github.com/standardnotes/component-relay)
 och är licensierad under AGPL-3.0, se `vendor/component-relay.LICENSE`.
+
+Biblioteket är lätt ändrat: när appen har ursprunget `null` (vissa Android-versioner) skickas meddelanden
+till `*` i stället för `"null"`, annars kastar webbläsaren ett fel och pluginet visar "Ej ansluten".
+Ändringen står som kommentar överst i filen. Pluginet använder inga `<form>`-element, eftersom editorns
+iframe kan sakna tillåtelse att skicka formulär.

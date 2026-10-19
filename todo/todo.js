@@ -130,7 +130,7 @@
     var ref = '';
     try { ref = document.referrer ? new URL(document.referrer).origin : '(tom)'; } catch (e) { ref = '(ogiltig)'; }
     return [
-      'Version: 1.4.2',
+      'Version: 1.4.3',
       'WebView: ' + (m ? 'Chrome ' + m[1] : navigator.userAgent.slice(0, 80)),
       'I iframe: ' + (window.parent !== window),
       'Referrer: ' + ref,
@@ -237,8 +237,20 @@
 
   // ---------- Händelser ----------
 
-  el.form.addEventListener('submit', function (event) {
-    event.preventDefault();
+  // Inga <form>-element: en sandboxad iframe utan allow-forms blockerar annars Enter och knappen.
+  function onEnter(input, fn) {
+    input.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' && !event.isComposing) {
+        event.preventDefault();
+        fn();
+      }
+    });
+  }
+
+  onEnter(el.input, addTask);
+  el.addBtn.addEventListener('click', addTask);
+
+  function addTask() {
     var title = el.input.value.replace(/\s+/g, ' ').trim();
     if (!title || state.locked) return;
     // Med ett filter valt får den nya uppgiften den personen.
@@ -247,7 +259,7 @@
     render();
     save();
     el.input.focus();
-  });
+  }
 
   [el.openList, el.doneList].forEach(function (list) {
     list.addEventListener('change', onListChange);
@@ -497,8 +509,10 @@
     render();
   });
 
-  el.addPersonForm.addEventListener('submit', function (event) {
-    event.preventDefault();
+  onEnter(el.newPerson, addPersonFromInput);
+  document.getElementById('add-person-btn').addEventListener('click', addPersonFromInput);
+
+  function addPersonFromInput() {
     if (state.locked) return;
     if (C.addPerson(doc(), el.newPerson.value)) {
       el.newPerson.value = '';
@@ -506,7 +520,7 @@
       render();
     }
     el.newPerson.focus();
-  });
+  }
 
   // Byt namn när fältet lämnas eller Enter trycks.
   el.peopleList.addEventListener('change', function (event) {
