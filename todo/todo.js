@@ -109,6 +109,37 @@
     return subs.length > 0 && subs.every(function (s) { return s.done; });
   }
 
+  // ---------- Diagnos (visas bara om Standard Notes inte svarar) ----------
+
+  var diagInfo = { errors: [], messages: 0, lastMessage: '' };
+  window.addEventListener('error', function (e) {
+    diagInfo.errors.push(String(e.message || e).slice(0, 120));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    diagInfo.errors.push('promise: ' + String(e.reason).slice(0, 100));
+  });
+  window.addEventListener('message', function (e) {
+    diagInfo.messages++;
+    var d = e.data, kind = typeof d;
+    if (kind === 'string') { try { d = JSON.parse(d); kind = 'json-sträng'; } catch (x) { /* ren sträng */ } }
+    diagInfo.lastMessage = 'origin=' + e.origin + ' typ=' + kind + (d && d.action ? ' action=' + d.action : '');
+  }, true);
+
+  function diagText() {
+    var m = /Chrome\/([\d.]+)/.exec(navigator.userAgent);
+    var ref = '';
+    try { ref = document.referrer ? new URL(document.referrer).origin : '(tom)'; } catch (e) { ref = '(ogiltig)'; }
+    return [
+      'Version: 1.4.2',
+      'WebView: ' + (m ? 'Chrome ' + m[1] : navigator.userAgent.slice(0, 80)),
+      'I iframe: ' + (window.parent !== window),
+      'Referrer: ' + ref,
+      'Meddelanden mottagna: ' + diagInfo.messages + (diagInfo.lastMessage ? ' (senast ' + diagInfo.lastMessage + ')' : ''),
+      'replaceChildren: ' + (typeof Element.prototype.replaceChildren),
+      'Fel: ' + (diagInfo.errors.length ? diagInfo.errors.join(' | ') : 'inga')
+    ].join('\n');
+  }
+
   var relay = new ComponentRelay({
     targetWindow: window,
     options: { coallesedSaving: true, coallesedSavingDelay: 250 },
@@ -122,6 +153,7 @@
   setTimeout(function () {
     if (!state.connected) {
       el.notice.hidden = false;
+      document.getElementById('diag').textContent = diagText();
       setSaveState('Ej ansluten', 'error');
     }
   }, NOT_CONNECTED_HINT_MS);

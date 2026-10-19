@@ -455,6 +455,7 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .notice code { color: var(--fg); }
+.diag { margin: 10px 0 0; font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); user-select: all; }
 .locked-banner { font-weight: 600; color: var(--fg); }
 
 /* ---------- Statusrad ---------- */
