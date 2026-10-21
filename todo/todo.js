@@ -130,7 +130,7 @@
     var ref = '';
     try { ref = document.referrer ? new URL(document.referrer).origin : '(tom)'; } catch (e) { ref = '(ogiltig)'; }
     return [
-      'Version: 1.4.3',
+      'Version: 1.5.0',
       'WebView: ' + (m ? 'Chrome ' + m[1] : navigator.userAgent.slice(0, 80)),
       'I iframe: ' + (window.parent !== window),
       'Referrer: ' + ref,
@@ -254,7 +254,7 @@
     var title = el.input.value.replace(/\s+/g, ' ').trim();
     if (!title || state.locked) return;
     // Med ett filter valt får den nya uppgiften den personen.
-    state.tasks.unshift({ id: state.nextId++, title: title, done: false, who: state.filter, recur: null, due: null, doneDate: null, subtasks: [] });
+    state.tasks.unshift({ id: state.nextId++, title: title, done: false, who: state.filter, recur: null, due: null, doneDate: null, note: null, subtasks: [] });
     el.input.value = '';
     render();
     save();
@@ -346,7 +346,7 @@
     if (!title || state.locked) return;
     // Med ett filter valt får deluppgiften den personen, om inte hela huvuduppgiften redan är personens.
     var who = state.filter && !belongsToFilter(parent.who) ? state.filter : null;
-    parent.subtasks.push({ id: state.nextId++, title: title, done: false, who: who, recur: null, due: null, doneDate: null });
+    parent.subtasks.push({ id: state.nextId++, title: title, done: false, who: who, recur: null, due: null, doneDate: null, note: null });
     input.value = '';
     C.syncParent(parent, C.today());
     save();
@@ -355,8 +355,20 @@
     if (again) again.focus({ preventScroll: true });
   }
 
+  function showNote(li, task) {
+    var p = li.querySelector('.note-text');
+    p.textContent = task.note || '';
+    // Visas under raden, men inte medan uppgiften redigeras (där finns textrutan).
+    p.hidden = !task.note || state.expandedId === task.id;
+  }
+
   function onListInput(event) {
     var task = taskFromEvent(event);
+    if (task && !state.locked && event.target.classList.contains('d-note')) {
+      task.note = event.target.value.replace(/\s+$/, '') || null;
+      save();
+      return;
+    }
     if (!task || state.locked || !event.target.classList.contains('d-title')) return;
     var title = event.target.value.replace(/\s+/g, ' ');
     if (!title.trim()) return;
@@ -669,6 +681,7 @@
     renderMeta(li.querySelector('.meta'), task);
 
     var expanded = state.expandedId === task.id && !doneInView && !state.locked;
+    showNote(li, task);
     body.setAttribute('aria-expanded', String(expanded));
     var details = li.querySelector('.details');
     details.hidden = !expanded;
@@ -685,6 +698,7 @@
 
     if (expanded) {
       li.querySelector('.d-title').value = task.title;
+      li.querySelector('.d-note').value = task.note || '';
       var whoSelect = li.querySelector('.d-who');
       whoSelect.appendChild(new Option('Ingen', ''));
       whoSelect.appendChild(new Option('Alla', C.EVERYONE));
@@ -720,8 +734,10 @@
     var expanded = state.expandedId === sub.id && !sub.done && !state.locked;
     body.setAttribute('aria-expanded', String(expanded));
     li.querySelector('.details').hidden = !expanded;
+    showNote(li, sub);
     if (expanded) {
       li.querySelector('.d-title').value = sub.title;
+      li.querySelector('.d-note').value = sub.note || '';
       var whoSelect = li.querySelector('.d-who');
       whoSelect.appendChild(new Option('Ingen', ''));
       whoSelect.appendChild(new Option('Alla', C.EVERYONE));

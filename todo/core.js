@@ -13,6 +13,11 @@
  *   - [ ] Städdag 🔁 varje vecka
  *     - [ ] Dammsuga 👤 Son
  *     - [x] Handla 👤 Pappa ✅ 2026-10-18
+ *
+ * Noteringar är rader som börjar med ">" direkt under uppgiften (eller deluppgiften):
+ *   - [ ] Boka tid hos tandläkaren
+ *     > Ring före kl 12.
+ *     > Kom ihåg försäkringskortet.
  */
 (function (root) {
   'use strict';
@@ -188,8 +193,15 @@
     var tasks = [];
     var parent = null;
     var parentIndent = 0;
+    var last = null;
     lines.forEach(function (line) {
       if (!line.trim()) {
+        return;
+      }
+      // Notering: "> text" hör till senaste uppgiften/deluppgiften.
+      var nm = /^\s*>\s?(.*)$/.exec(line);
+      if (nm && last) {
+        last.note = last.note === null ? nm[1] : last.note + '\n' + nm[1];
         return;
       }
       // Rad med större indrag än huvuduppgiften = deluppgift (bara en nivå; djupare plattas ut).
@@ -232,7 +244,7 @@
       if (!title) {
         return;
       }
-      var task = { title: title, done: done, who: who, recur: recur, due: due, doneDate: done ? doneDate : null };
+      var task = { title: title, done: done, who: who, recur: recur, due: due, doneDate: done ? doneDate : null, note: null };
       if (indented) {
         parent.subtasks.push(task);
       } else {
@@ -241,6 +253,13 @@
         parent = task;
         parentIndent = indent;
       }
+      last = task;
+    });
+    // Tomma rader i slutet av en notering är ingen text.
+    tasks.forEach(function (t) {
+      [t].concat(t.subtasks).forEach(function (x) {
+        if (x.note !== null) x.note = x.note.replace(/\s+$/, '') || null;
+      });
     });
     return tasks;
   }
@@ -289,10 +308,20 @@
     return line;
   }
 
+  function serializeNote(t, indent) {
+    if (!t.note || !String(t.note).trim()) return [];
+    return String(t.note).replace(/\s+$/, '').split(/\r?\n/).map(function (l) {
+      return indent + '>' + (l ? ' ' + l : '');
+    });
+  }
+
   function serializeTask(t) {
-    return [serializeLine(t, '')].concat((t.subtasks || []).map(function (s) {
-      return serializeLine(s, '  ');
-    })).join('\n');
+    var lines = [serializeLine(t, '')].concat(serializeNote(t, '  '));
+    (t.subtasks || []).forEach(function (s) {
+      lines.push(serializeLine(s, '  '));
+      lines = lines.concat(serializeNote(s, '    '));
+    });
+    return lines.join('\n');
   }
 
   function serialize(tasks) {

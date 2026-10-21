@@ -29,6 +29,8 @@ Egna plugins till [Standard Notes](https://standardnotes.com), publicerade med G
   bockar man av huvuduppgiften bockas alla deluppgifter av. Med ett filter valt syns bara personens egna
   deluppgifter, och när de är klara hamnar uppgiften under Klara för den personen.
   En återkommande huvuduppgift nollställer sina deluppgifter när den kommer tillbaka.
+- **Noteringar:** tryck på en uppgift eller deluppgift och skriv i fältet Notering. Noteringen visas under
+  uppgiften och sparas som rader som börjar med `>`.
 
 Uppgifterna sparas som vanlig text i anteckningen, en per rad, så de går att läsa även i andra editorer:
 
@@ -39,6 +41,9 @@ Uppgifterna sparas som vanlig text i anteckningen, en per rad, så de går att l
 - [ ] Städdag 🔁 varje vecka
   - [ ] Dammsuga 👤 Son
   - [x] Handla 👤 Pappa ✅ 2026-10-18
+- [ ] Boka tid hos tandläkaren
+  > Ring före kl 12.
+  > Kom ihåg försäkringskortet.
 - [x] Ring tandläkaren ✅ 2026-10-18
 ```
 

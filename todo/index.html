@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Todo (jagemyr)</title>
-  <link rel="stylesheet" href="todo.css?v=1.4.3">
+  <link rel="stylesheet" href="todo.css?v=1.5.0">
 </head>
 <body>
   <div class="add" id="add-form">
@@ -66,10 +66,15 @@
           <span class="meta"></span>
         </button>
       </div>
+      <p class="note-text" hidden></p>
       <div class="details" hidden>
         <label class="field">
           <span>Uppgift</span>
           <input type="text" class="d-title" enterkeyhint="done">
+        </label>
+        <label class="field">
+          <span>Notering</span>
+          <textarea class="d-note" rows="3" placeholder="Skriv en notering…"></textarea>
         </label>
         <div class="field">
           <span>Deluppgifter</span>
@@ -110,6 +115,7 @@
           <span class="meta"></span>
         </button>
       </div>
+      <p class="note-text" hidden></p>
       <div class="details" hidden>
         <div class="field-grid">
           <label class="field">
@@ -121,6 +127,10 @@
             <select class="d-who"></select>
           </label>
         </div>
+        <label class="field">
+          <span>Notering</span>
+          <textarea class="d-note" rows="3" placeholder="Skriv en notering…"></textarea>
+        </label>
         <div class="d-actions">
           <span></span>
           <button type="button" class="link-btn danger d-delete">Ta bort deluppgift</button>
@@ -129,8 +139,8 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=1.4.3"></script>
-  <script src="core.js?v=1.4.3"></script>
-  <script src="todo.js?v=1.4.3"></script>
+  <script src="vendor/component-relay.js?v=1.5.0"></script>
+  <script src="core.js?v=1.5.0"></script>
+  <script src="todo.js?v=1.5.0"></script>
 </body>
 </html>
