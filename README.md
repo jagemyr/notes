@@ -52,38 +52,48 @@ Raden med 👥 skrivs bara när personerna har ändrats från standard. Rader so
 
 ## NWO
 
-En mall med sex fält: **Företag**, **Varor**, **Fraktbolag**, **Beställd**, **Skickad** och **Bedömt levdatum**.
+Håll koll på beställningar. En anteckning kan hålla flera beställningar från olika ställen, var och en med
+**Företag**, **Vara**, **Fraktbolag**, **Beställd**, **Skickad** och **Bedömt levdatum**.
 
-- Varor är en lista: en beställning kan ha flera varor. **Lägg till vara** ger en ny rad, och Enter på en vara
-  med text gör samma sak. Enter på en tom rad går vidare till Fraktbolag. Krysset tar bort varan.
-  Tomma rader sparas inte.
+- Beställningarna visas som en lista. Varje rad visar vara, företag och fraktbolag, och till höger det senaste
+  steget: bedömt levdatum med hur många dagar det är kvar, annars skickad, annars beställd.
+- Tryck på en beställning för att fälla ut den och ändra fälten. **Klar** fäller ihop den igen.
+  En anteckning med bara en beställning visas utfälld direkt.
+- **Ny beställning** lägger till en beställning sist i listan.
+- **Ta bort beställning** frågar en gång till (*Tryck igen för att ta bort*). En tom beställning tas bort direkt.
 - Fraktbolag fylls i fritt, med förslag (PostNord, DHL, Budbee, Instabox med flera).
 - Datumen väljs i en datumväljare. Under varje datum står veckodag och hur långt det är dit eller sedan dess
-  (t.ex. *Tisdag 3 november · om 7 dagar*).
-- Beställd och Skickad har en knapp **Idag** som fyller i dagens datum.
-- Ett passerat bedömt levdatum visas i rött.
-- Enter hoppar till nästa fält.
-- Anteckningslistan visar första varan (och hur många till), företag, fraktbolag och det senaste ifyllda datumet
-  (bedömt levdatum, annars skickad, annars beställd), t.ex. *Skruvdragare +2 · Exempelbolaget · PostNord · lev 3 nov*.
+  (t.ex. *Tisdag 3 november · om 7 dagar*). Beställd och Skickad har en knapp **Idag**.
+- Ett passerat bedömt levdatum visas i rött, idag och imorgon i blått.
+- Enter hoppar till nästa fält i samma beställning.
+- Anteckningslistan i Standard Notes visar till exempel
+  *2 beställningar: Skruvdragare (lev 3 nov), Vinterjacka (skickad 26 okt)*.
 
-Fälten sparas som vanlig text i anteckningen, en rad per fält och en `Vara:`-rad per vara, så de går att läsa
-även i andra editorer:
+Allt sparas som vanlig text i anteckningen, ett block per beställning med en tom rad emellan, så det går att
+läsa även i andra editorer:
 
 ```
-Företag: Exempelbolaget
+Företag: Webbutiken
 Vara: Skruvdragare
-Vara: Bitsats
-Vara: Extra batteri
 Fraktbolag: PostNord
 Beställd: 2026-10-27
-Skickad: 2026-10-29
+Skickad:
 Bedömt levdatum: 2026-11-03
+
+Företag: Begagnatsajten
+Vara: Vinterjacka
+Fraktbolag: Budbee
+Beställd: 2026-10-25
+Skickad: 2026-10-26
+Bedömt levdatum: 2026-10-30
 ```
 
-Anteckningar från version 1.0 (utan Beställd och Skickad) fungerar som de är; de nya raderna läggs till när något ändras.
+Anteckningar från tidigare versioner fungerar som de är och blir en beställning. Flera `Vara:`-rader i samma
+block (från version 1.2) slås ihop till en vara med kommatecken.
 
-Rader som inte är fält ligger kvar oförändrade under fälten. Ett datum som skrivits på annat sätt än ÅÅÅÅ-MM-DD
-behålls och visas under datumfältet tills ett nytt datum väljs.
+Beställningar utan något ifyllt sparas inte. Rader som inte är fält ligger kvar oförändrade, i sin beställning
+om de står i ett block med fält, annars sist. Ett datum som skrivits på annat sätt än ÅÅÅÅ-MM-DD behålls och
+visas under datumfältet tills ett nytt datum väljs.
 
 ## Installera
 
@@ -107,7 +117,7 @@ notes/
 ├── nwo/
 │   ├── ext.json
 │   ├── index.html
-│   ├── nwo.js             Textformat, varulista och gränssnitt
+│   ├── nwo.js             Textformat och gränssnitt för beställningslistan
 │   ├── nwo.css
 │   └── vendor/
 └── test-editor/

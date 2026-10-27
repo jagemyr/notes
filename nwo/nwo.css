@@ -44,14 +44,120 @@ button, input { font: inherit; color: inherit; }
   -webkit-overflow-scrolling: touch;
 }
 
-/* ---------- Fält ---------- */
+/* ---------- Beställningar ---------- */
 
-.fields {
+.orders {
+  list-style: none;
+  margin: 0;
+  padding: 16px max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
   display: grid;
-  gap: 16px;
-  max-width: 560px;
-  padding: 20px max(var(--gutter), env(safe-area-inset-right)) 24px max(var(--gutter), env(safe-area-inset-left));
+  gap: 10px;
+  max-width: 600px;
 }
+
+.order {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.order.expanded {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.summary {
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 14px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.s-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.s-title,
+.s-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.s-title { font-weight: 600; }
+.s-title.placeholder { font-weight: 500; color: var(--muted); }
+
+.s-meta { font-size: 0.8em; color: var(--muted); }
+.s-meta:empty { display: none; }
+
+.s-status {
+  flex: none;
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  font-size: 0.8em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.s-status:empty,
+.s-top:empty,
+.s-bottom:empty { display: none; }
+
+.s-top { font-weight: 600; }
+.s-bottom { color: var(--muted); }
+.s-bottom.soon { color: var(--accent); font-weight: 600; }
+.s-bottom.late { color: var(--danger); font-weight: 600; }
+
+.chevron {
+  flex: none;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+
+.order.expanded .chevron { transform: rotate(180deg); }
+
+.details {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.d-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.add-row {
+  padding: 12px max(var(--gutter), env(safe-area-inset-right)) 24px max(var(--gutter), env(safe-area-inset-left));
+}
+
+.add-order {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------- Fält ---------- */
 
 .field {
   display: grid;
@@ -104,45 +210,8 @@ button, input { font: inherit; color: inherit; }
   cursor: pointer;
 }
 
-/* ---------- Varor ---------- */
-
-.items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.item input { flex: 1; }
-
-.item-remove {
-  flex: none;
-  width: 40px;
-  height: 44px;
-  margin-right: -8px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.item-remove:hover { color: var(--danger); }
-
-.add-item {
-  justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
+.link-btn.danger { color: var(--danger); }
+.link-btn.confirm { font-weight: 700; }
 
 .when {
   margin: 0;
@@ -191,3 +260,7 @@ button, input { font: inherit; color: inherit; }
 
 .save-state.saved { color: var(--accent); }
 .save-state.error { color: var(--danger); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
+}

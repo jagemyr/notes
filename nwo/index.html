@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NWO (jagemyr)</title>
-  <link rel="stylesheet" href="nwo.css?v=1.2.0">
+  <link rel="stylesheet" href="nwo.css?v=2.0.0">
 </head>
 <body>
   <main class="page">
@@ -15,54 +15,13 @@
     </div>
     <div class="locked-banner" id="locked-banner" hidden>Anteckningen är låst.</div>
 
-    <div class="fields" id="fields">
-      <label class="field">
-        <span>Företag</span>
-        <input type="text" data-key="foretag" autocomplete="off" autocapitalize="sentences" enterkeyhint="next" disabled>
-      </label>
+    <ul class="orders" id="orders" aria-label="Beställningar"></ul>
 
-      <div class="field">
-        <span id="items-label">Varor</span>
-        <ul class="items" id="items" aria-labelledby="items-label"></ul>
-        <button type="button" class="link-btn add-item" id="add-item" hidden>
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-          Lägg till vara
-        </button>
-      </div>
-
-      <label class="field">
-        <span>Fraktbolag</span>
-        <input type="text" data-key="fraktbolag" list="carriers" autocomplete="off" autocapitalize="sentences" enterkeyhint="next" disabled>
-      </label>
-
-      <div class="field" data-date-field="bestalld">
-        <label for="bestalld">Beställd</label>
-        <div class="date-row">
-          <input type="date" id="bestalld" data-key="bestalld" disabled>
-          <button type="button" class="link-btn" data-action="today" hidden>Idag</button>
-          <button type="button" class="link-btn" data-action="clear" hidden>Ta bort</button>
-        </div>
-        <p class="when" hidden></p>
-      </div>
-
-      <div class="field" data-date-field="skickad">
-        <label for="skickad">Skickad</label>
-        <div class="date-row">
-          <input type="date" id="skickad" data-key="skickad" disabled>
-          <button type="button" class="link-btn" data-action="today" hidden>Idag</button>
-          <button type="button" class="link-btn" data-action="clear" hidden>Ta bort</button>
-        </div>
-        <p class="when" hidden></p>
-      </div>
-
-      <div class="field" data-date-field="levdatum">
-        <label for="levdatum">Bedömt levdatum</label>
-        <div class="date-row">
-          <input type="date" id="levdatum" data-key="levdatum" disabled>
-          <button type="button" class="link-btn" data-action="clear" hidden>Ta bort</button>
-        </div>
-        <p class="when" hidden></p>
-      </div>
+    <div class="add-row">
+      <button type="button" class="add-order" id="add-order" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        Ny beställning
+      </button>
     </div>
 
     <datalist id="carriers">
@@ -80,20 +39,78 @@
   </main>
 
   <footer class="status" role="status" aria-live="polite">
-    <span id="filled">0 av 6 ifyllda</span>
+    <span id="count">0 beställningar</span>
     <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
   </footer>
 
-  <template id="item-template">
-    <li class="item">
-      <input type="text" class="item-input" aria-label="Vara" autocomplete="off" autocapitalize="sentences" enterkeyhint="enter">
-      <button type="button" class="item-remove" aria-label="Ta bort vara">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  <template id="order-template">
+    <li class="order">
+      <button type="button" class="summary" aria-expanded="false">
+        <span class="s-main">
+          <span class="s-title"></span>
+          <span class="s-meta"></span>
+        </span>
+        <span class="s-status">
+          <span class="s-top"></span>
+          <span class="s-bottom"></span>
+        </span>
+        <svg class="chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
+
+      <div class="details" hidden>
+        <label class="field">
+          <span>Företag</span>
+          <input type="text" data-key="foretag" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+        </label>
+
+        <label class="field">
+          <span>Vara</span>
+          <input type="text" data-key="vara" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+        </label>
+
+        <label class="field">
+          <span>Fraktbolag</span>
+          <input type="text" data-key="fraktbolag" list="carriers" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+        </label>
+
+        <div class="field" data-date-field="bestalld">
+          <span>Beställd</span>
+          <div class="date-row">
+            <input type="date" data-key="bestalld" aria-label="Beställd">
+            <button type="button" class="link-btn" data-action="today" hidden>Idag</button>
+            <button type="button" class="link-btn" data-action="clear" hidden>Ta bort</button>
+          </div>
+          <p class="when" hidden></p>
+        </div>
+
+        <div class="field" data-date-field="skickad">
+          <span>Skickad</span>
+          <div class="date-row">
+            <input type="date" data-key="skickad" aria-label="Skickad">
+            <button type="button" class="link-btn" data-action="today" hidden>Idag</button>
+            <button type="button" class="link-btn" data-action="clear" hidden>Ta bort</button>
+          </div>
+          <p class="when" hidden></p>
+        </div>
+
+        <div class="field" data-date-field="levdatum">
+          <span>Bedömt levdatum</span>
+          <div class="date-row">
+            <input type="date" data-key="levdatum" aria-label="Bedömt levdatum">
+            <button type="button" class="link-btn" data-action="clear" hidden>Ta bort</button>
+          </div>
+          <p class="when" hidden></p>
+        </div>
+
+        <div class="d-actions">
+          <button type="button" class="link-btn" data-action="collapse">Klar</button>
+          <button type="button" class="link-btn danger" data-action="remove">Ta bort beställning</button>
+        </div>
+      </div>
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=1.2.0"></script>
-  <script src="nwo.js?v=1.2.0"></script>
+  <script src="vendor/component-relay.js?v=2.0.0"></script>
+  <script src="nwo.js?v=2.0.0"></script>
 </body>
 </html>
