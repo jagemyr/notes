@@ -120,6 +120,10 @@ Varje plugin ligger i en egen mapp med en egen `ext.json`. Ett nytt plugin lägg
 `code`, `spreadsheet`, `authentication`, `super` eller `unknown`. Annars kraschar editormenyn i appen
 ("undefined is not an object (evaluating 'e[o].push')").
 
+Använd aldrig `plain-text` eller `super`: anteckningar med de typerna öppnas alltid i appens inbyggda
+Plain Text- respektive Super-editor, så pluginet hoppar tillbaka till Plain Text när man väljer det.
+Ett plugin som inte passar någon annan typ får `unknown`.
+
 ## Uppdatera ett plugin
 
 Höj `version` i pluginets `ext.json` och `?v=` i `url` och i `index.html` när något ändras, så att appen inte visar cachade filer. Standard Notes läser `latest_url` och hämtar nya versioner.
