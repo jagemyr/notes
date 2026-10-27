@@ -1,13 +1,14 @@
 /*
  * NWO (jagemyr) – beställningar i Standard Notes. En anteckning kan hålla flera
- * beställningar, var och en med Företag, Vara, Fraktbolag, Beställd, Skickad och
- * Bedömt levdatum.
+ * beställningar, var och en med Företag, en eller flera Varor, Fraktbolag, Beställd,
+ * Skickad och Bedömt levdatum.
  *
  * Allt sparas som vanlig text i anteckningen: ett block per beställning, en rad per
- * fält och en tom rad mellan beställningarna.
+ * fält, en Vara-rad per vara och en tom rad mellan beställningarna.
  *
  *   Företag: Webbutiken
  *   Vara: Skruvdragare
+ *   Vara: Bitsats
  *   Fraktbolag: PostNord
  *   Beställd: 2026-10-27
  *   Skickad:
@@ -23,18 +24,22 @@
 (function () {
   'use strict';
 
-  var VERSION = '2.0.0';
+  var VERSION = '2.1.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
   var MONTHS = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
   var FIELD_LINE = /^\s*([^:]{1,40}?)\s*:(.*)$/;
 
+  // Förslag under Fraktbolag. Egna knappar i stället för <datalist>: Safaris förslagsfönster
+  // öppnas mitt i tangenttrycket och kan få tangenten att upprepas (PPPP…).
+  var CARRIERS = ['PostNord', 'DHL', 'Budbee', 'Instabox', 'Bring', 'DB Schenker', 'UPS', 'FedEx', 'Airmee', 'Early Bird'];
+
   // Ordningen här är ordningen i anteckningen. Alias gör att rader skrivna för hand också känns igen.
   var FIELDS = [
     { key: 'foretag', label: 'Företag', aliases: ['foretag', 'företag'] },
-    // joinRepeats: flera Vara-rader i samma block (från version 1.2) slås ihop till en.
-    { key: 'vara', label: 'Vara', joinRepeats: true, aliases: ['vara', 'varor'] },
+    // multi: en rad per vara.
+    { key: 'vara', label: 'Vara', multi: true, aliases: ['vara', 'varor'] },
     { key: 'fraktbolag', label: 'Fraktbolag', aliases: ['fraktbolag', 'frakt'] },
     { key: 'bestalld', label: 'Beställd', aliases: ['beställd', 'bestalld', 'beställt', 'beställning', 'beställningsdatum', 'orderdatum'] },
     { key: 'skickad', label: 'Skickad', aliases: ['skickad', 'skickat', 'skickades', 'skickat datum', 'avsänd'] },
@@ -55,6 +60,7 @@
     orders: document.getElementById('orders'),
     addOrder: document.getElementById('add-order'),
     template: document.getElementById('order-template'),
+    itemTemplate: document.getElementById('item-template'),
     count: document.getElementById('count'),
     saveState: document.getElementById('save-state')
   };
@@ -78,18 +84,32 @@
 
   function emptyOrder() {
     var values = {};
-    FIELDS.forEach(function (f) { values[f.key] = ''; });
+    FIELDS.forEach(function (f) { values[f.key] = f.multi ? [] : ''; });
     return { values: values, extra: [] };
+  }
+
+  /** Varorna som har text (tomma rader i formuläret sparas inte). */
+  function filledItems(order) {
+    return order.values.vara.map(oneLine).filter(Boolean);
   }
 
   /** En beställning utan något ifyllt sparas inte (den finns bara i formuläret). */
   function hasContent(order) {
-    return FIELDS.some(function (f) { return oneLine(order.values[f.key]); }) ||
-      order.extra.some(function (line) { return line.trim(); });
+    return FIELDS.some(function (f) {
+      return f.multi ? filledItems(order).length > 0 : oneLine(order.values[f.key]);
+    }) || order.extra.some(function (line) { return line.trim(); });
   }
 
+  /** Rubrik i listan: varorna, annars företaget. */
   function orderTitle(order) {
-    return oneLine(order.values.vara) || oneLine(order.values.foretag) || '';
+    return filledItems(order).join(', ') || oneLine(order.values.foretag);
+  }
+
+  /** Kort namn i förhandsvisningen: första varan och "+N" för resten. */
+  function shortTitle(order) {
+    var items = filledItems(order);
+    if (!items.length) return oneLine(order.values.foretag);
+    return items[0] + (items.length > 1 ? ' +' + (items.length - 1) : '');
   }
 
   /** Senaste ifyllda steget: { step, value, date } eller null. */
@@ -130,22 +150,19 @@
           return;
         }
         var value = m[2].trim();
-        if (current && seen[field.key]) {
-          if (field.joinRepeats) {
-            var old = current.values[field.key];
-            if (value) current.values[field.key] = old ? old + ', ' + value : value;
-            return;
-          }
-          // Samma fält igen utan tom rad emellan: en ny beställning börjar.
-          current = null;
-        }
+        // Samma fält igen utan tom rad emellan: en ny beställning börjar (utom för varor).
+        if (current && seen[field.key] && !field.multi) current = null;
         if (!current) {
           current = emptyOrder();
           seen = {};
           orders.push(current);
         }
         seen[field.key] = true;
-        current.values[field.key] = value;
+        if (field.multi) {
+          if (value) current.values[field.key].push(value);
+        } else {
+          current.values[field.key] = value;
+        }
       });
 
       if (loose.length) restBlocks.push(loose.join('\n'));
@@ -159,9 +176,11 @@
     // En tom mall sparas så att fälten syns även i andra editorer.
     if (!filled.length) filled = [emptyOrder()];
     var blocks = filled.map(function (order) {
-      var lines = FIELDS.map(function (f) {
-        var v = oneLine(order.values[f.key]);
-        return f.label + ':' + (v ? ' ' + v : '');
+      var lines = [];
+      FIELDS.forEach(function (f) {
+        var values = f.multi ? filledItems(order) : [oneLine(order.values[f.key])];
+        if (!values.length) values = [''];
+        values.forEach(function (v) { lines.push(f.label + ':' + (v ? ' ' + v : '')); });
       });
       return lines.concat(order.extra).join('\n');
     });
@@ -175,34 +194,36 @@
 
   /**
    * Förhandsvisningen i anteckningslistan.
-   * En beställning: "Skruvdragare · Webbutiken · PostNord · lev 3 nov".
-   * Flera: "2 beställningar: Skruvdragare (lev 3 nov), Vinterjacka (skickad 26 okt)".
+   * En beställning: "Skruvdragare +1 · Webbutiken · PostNord · lev 3 nov".
+   * Flera: "2 beställningar: Skruvdragare +1 (lev 3 nov), Vinterjacka (skickad 26 okt)".
    */
   function preview(orders) {
     var filled = orders.filter(hasContent);
     if (!filled.length) return '';
     if (filled.length === 1) {
       var o = filled[0];
-      var parts = [o.values.vara, o.values.foretag, o.values.fraktbolag].map(oneLine).filter(Boolean);
+      var items = filledItems(o);
+      var itemText = items.length ? shortTitle(o) : '';
+      var parts = [itemText, o.values.foretag, o.values.fraktbolag].map(oneLine).filter(Boolean);
       var s = stepText(o);
       if (s) parts.push(s);
       return truncate(parts.join(' · '));
     }
     return truncate(filled.length + ' beställningar: ' + filled.map(function (order) {
-      var title = orderTitle(order) || 'Beställning';
+      var title = shortTitle(order) || 'Beställning';
       var s = stepText(order);
       return s ? title + ' (' + s + ')' : title;
     }).join(', '));
-  }
-
-  function truncate(text) {
-    return text.length > PREVIEW_LENGTH ? text.slice(0, PREVIEW_LENGTH - 1).trim() + '…' : text;
   }
 
   function stepText(order) {
     var latest = latestStep(order);
     if (!latest) return '';
     return latest.step.preview + ' ' + (latest.date ? shortDate(latest.date) : latest.value);
+  }
+
+  function truncate(text) {
+    return text.length > PREVIEW_LENGTH ? text.slice(0, PREVIEW_LENGTH - 1).trim() + '…' : text;
   }
 
   // ---------- Datum ----------
@@ -389,25 +410,52 @@
 
   // ---------- Händelser ----------
 
-  function orderIndex(target) {
-    var card = target.closest('.order');
-    return card ? Array.prototype.indexOf.call(el.orders.children, card) : -1;
+  function indexIn(list, node) {
+    return node ? Array.prototype.indexOf.call(list.children, node) : -1;
   }
 
-  function onFieldInput(event) {
+  function orderIndex(target) {
+    return indexIn(el.orders, target.closest('.order'));
+  }
+
+  function itemIndex(target) {
+    var row = target.closest('.item');
+    return row ? indexIn(row.parentNode, row) : -1;
+  }
+
+  /**
+   * Inmatning ritar bara om det som ändras (rubrik, räknare, datumrad, förslag),
+   * inte hela kortet, så att inget i fältet man skriver i rörs.
+   */
+  function onInput(event) {
     var input = event.target;
-    var key = input.getAttribute && input.getAttribute('data-key');
-    if (!key || !editable()) return;
+    if (input.tagName !== 'INPUT' || !editable()) return;
+    var card = input.closest('.order');
     var order = state.orders[orderIndex(input)];
-    if (!order || order.values[key] === input.value) return;
-    order.values[key] = input.value;
-    render();
+    if (!order) return;
+
+    if (input.classList.contains('item-input')) {
+      var i = itemIndex(input);
+      if (i < 0 || order.values.vara[i] === input.value) return;
+      order.values.vara[i] = input.value;
+      renderItemControls(card, order, true);
+    } else {
+      var key = input.getAttribute('data-key');
+      if (!key || order.values[key] === input.value) return;
+      order.values[key] = input.value;
+      if (input.type === 'date') {
+        renderDateBlock(card.querySelector('[data-date-field="' + key + '"]'), order, true);
+      }
+      if (key === 'fraktbolag') renderCarriers(card, order, true);
+    }
+    renderSummary(card, order);
+    renderCount();
     save();
   }
 
-  el.orders.addEventListener('input', onFieldInput);
+  el.orders.addEventListener('input', onInput);
   // Vissa Android-datumväljare skickar bara change.
-  el.orders.addEventListener('change', onFieldInput);
+  el.orders.addEventListener('change', onInput);
 
   el.orders.addEventListener('click', function (event) {
     var index = orderIndex(event.target);
@@ -418,7 +466,7 @@
       return;
     }
 
-    var button = event.target.closest('[data-action]');
+    var button = event.target.closest('[data-action], [data-carrier]');
     if (!button) return;
     var action = button.getAttribute('data-action');
 
@@ -429,10 +477,27 @@
       return;
     }
     if (!editable()) return;
+    var order = state.orders[index];
+    var card = el.orders.children[index];
 
-    if (action === 'today' || action === 'clear') {
+    if (button.hasAttribute('data-carrier')) {
+      order.values.fraktbolag = button.getAttribute('data-carrier');
+      render();
+      save();
+    } else if (action === 'today' || action === 'clear') {
       var key = button.closest('[data-date-field]').getAttribute('data-date-field');
-      state.orders[index].values[key] = action === 'today' ? todayIso() : '';
+      order.values[key] = action === 'today' ? todayIso() : '';
+      render();
+      save();
+    } else if (action === 'add-item') {
+      var items = order.values.vara;
+      // Återanvänd en tom sista rad i stället för att lägga till en till.
+      if (!items.length || oneLine(items[items.length - 1])) items.push('');
+      renderItems(card, order, true, items.length - 1);
+    } else if (action === 'remove-item') {
+      var i = itemIndex(button);
+      if (i < 0) return;
+      order.values.vara.splice(i, 1);
       render();
       save();
     } else if (action === 'remove') {
@@ -440,20 +505,30 @@
     }
   });
 
-  // Enter hoppar till nästa fält i samma beställning (ingen <form>, se README).
   el.orders.addEventListener('keydown', function (event) {
     var input = event.target;
     if (event.key !== 'Enter' || input.tagName !== 'INPUT' || input.type === 'date') return;
     event.preventDefault();
     var card = input.closest('.order');
-    var move = function () {
-      var all = Array.prototype.slice.call(card.querySelectorAll('input'));
-      var next = all[all.indexOf(input) + 1];
-      if (next) next.focus(); else input.blur();
-    };
-    // Med förslagslista (Fraktbolag) får webbläsaren först välja förslaget; annars flyttas fokus direkt,
-    // så att nästa bokstav inte hamnar i fel fält.
-    if (input.hasAttribute('list')) setTimeout(move, 0); else move();
+
+    // Enter på en vara med text ger en ny rad under; Enter på en tom rad går vidare till Fraktbolag.
+    if (input.classList.contains('item-input') && editable()) {
+      var order = state.orders[orderIndex(input)];
+      var i = itemIndex(input);
+      if (!oneLine(input.value)) {
+        card.querySelector('[data-key="fraktbolag"]').focus();
+        return;
+      }
+      var next = order.values.vara[i + 1];
+      if (next === undefined || oneLine(next)) order.values.vara.splice(i + 1, 0, '');
+      renderItems(card, order, true, i + 1);
+      return;
+    }
+
+    // Annars: nästa fält i samma beställning (ingen <form>, se README).
+    var all = Array.prototype.slice.call(card.querySelectorAll('.details input'));
+    var following = all[all.indexOf(input) + 1];
+    if (following) following.focus(); else input.blur();
   });
 
   el.addOrder.addEventListener('click', function () {
@@ -536,6 +611,10 @@
     });
 
     el.addOrder.hidden = !canEdit;
+    renderCount();
+  }
+
+  function renderCount() {
     var n = state.orders.filter(hasContent).length;
     el.count.textContent = n === 1 ? '1 beställning' : n + ' beställningar';
   }
@@ -545,33 +624,25 @@
     card.classList.toggle('expanded', expanded);
     card.querySelector('.summary').setAttribute('aria-expanded', String(expanded));
     card.querySelector('.details').hidden = !expanded;
+    renderSummary(card, order);
 
-    // Sammanfattning: vara (eller företag) överst, resten under, status till höger.
-    var vara = oneLine(order.values.vara);
-    var foretag = oneLine(order.values.foretag);
-    var title = card.querySelector('.s-title');
-    title.textContent = orderTitle(order) || 'Ny beställning';
-    title.classList.toggle('placeholder', !orderTitle(order));
-    card.querySelector('.s-meta').textContent =
-      [vara ? foretag : '', oneLine(order.values.fraktbolag)].filter(Boolean).join(' · ');
-    renderStatus(card, order);
-
-    // Fälten.
     Array.prototype.forEach.call(card.querySelectorAll('input[data-key]'), function (input) {
       var value = order.values[input.getAttribute('data-key')] || '';
       if (input.type === 'date') {
         // Datumväljaren kan bara visa ÅÅÅÅ-MM-DD; annan text står kvar i anteckningen och visas under fältet.
         var iso = parseIso(value) ? value : '';
         if (input.value !== iso) input.value = iso;
-        input.disabled = !canEdit;
+        setFlag(input, 'disabled', !canEdit);
         input.classList.toggle('empty', !iso);
       } else {
         if (input.value !== value) input.value = value;
-        input.disabled = !state.note;
-        input.readOnly = state.locked;
+        setFlag(input, 'disabled', !state.note);
+        setFlag(input, 'readOnly', state.locked);
       }
     });
 
+    renderItems(card, order, canEdit);
+    renderCarriers(card, order, canEdit);
     Array.prototype.forEach.call(card.querySelectorAll('[data-date-field]'), function (block) {
       renderDateBlock(block, order, canEdit);
     });
@@ -581,6 +652,23 @@
     remove.hidden = !canEdit;
     remove.textContent = confirming ? 'Tryck igen för att ta bort' : 'Ta bort beställning';
     remove.classList.toggle('confirm', confirming);
+  }
+
+  /** Sätter en egenskap bara när den faktiskt ändras. */
+  function setFlag(node, name, value) {
+    if (node[name] !== value) node[name] = value;
+  }
+
+  /** Rubrik, undertext och status i den ihopfällda raden. */
+  function renderSummary(card, order) {
+    var title = card.querySelector('.s-title');
+    var text = orderTitle(order);
+    title.textContent = text || 'Ny beställning';
+    title.classList.toggle('placeholder', !text);
+    var hasItems = filledItems(order).length > 0;
+    card.querySelector('.s-meta').textContent =
+      [hasItems ? oneLine(order.values.foretag) : '', oneLine(order.values.fraktbolag)].filter(Boolean).join(' · ');
+    renderStatus(card, order);
   }
 
   function renderStatus(card, order) {
@@ -606,6 +694,68 @@
     }
   }
 
+  /** Varuraderna i ett kort. Raderna byggs bara om när antalet ändras. */
+  function renderItems(card, order, canEdit, focusIndex) {
+    var items = order.values.vara;
+    if (!items.length) items.push('');
+    var list = card.querySelector('.items');
+
+    if (list.children.length !== items.length) {
+      list.textContent = '';
+      items.forEach(function () {
+        list.appendChild(el.itemTemplate.content.firstElementChild.cloneNode(true));
+      });
+    }
+
+    Array.prototype.forEach.call(list.children, function (row, i) {
+      var input = row.querySelector('.item-input');
+      if (input.value !== items[i]) input.value = items[i];
+      setFlag(input, 'disabled', !state.note);
+      setFlag(input, 'readOnly', state.locked);
+      input.setAttribute('aria-label', 'Vara ' + (i + 1));
+    });
+    renderItemControls(card, order, canEdit);
+
+    if (typeof focusIndex === 'number' && list.children[focusIndex]) {
+      list.children[focusIndex].querySelector('.item-input').focus();
+    }
+  }
+
+  /** Kryssen, "Lägg till vara" och antalet i rubriken. */
+  function renderItemControls(card, order, canEdit) {
+    var items = order.values.vara;
+    var list = card.querySelector('.items');
+    Array.prototype.forEach.call(list.children, function (row) {
+      // Den enda raden går inte att ta bort så länge den är tom.
+      row.querySelector('.item-remove').hidden = !canEdit || (items.length === 1 && !oneLine(items[0]));
+    });
+    var count = filledItems(order).length;
+    card.querySelector('.items-label').textContent = count > 1 ? 'Varor (' + count + ')' : 'Varor';
+    card.querySelector('[data-action="add-item"]').hidden = !canEdit;
+  }
+
+  /** Förslag på fraktbolag: alla när fältet är tomt, annars de som börjar på det man skrivit. */
+  function renderCarriers(card, order, canEdit) {
+    var box = card.querySelector('.carriers');
+    var typed = oneLine(order.values.fraktbolag).toLowerCase();
+    var names = !canEdit ? [] : CARRIERS.filter(function (name) {
+      var lower = name.toLowerCase();
+      return !typed || (lower.indexOf(typed) === 0 && lower !== typed);
+    });
+    var key = names.join('|');
+    if (box.getAttribute('data-shown') === key) return;
+    box.setAttribute('data-shown', key);
+    box.textContent = '';
+    names.forEach(function (name) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'carrier';
+      chip.setAttribute('data-carrier', name);
+      chip.textContent = name;
+      box.appendChild(chip);
+    });
+  }
+
   function renderDateBlock(block, order, canEdit) {
     var key = block.getAttribute('data-date-field');
     var field = FIELDS.filter(function (f) { return f.key === key; })[0];
@@ -613,7 +763,9 @@
     var date = parseIso(value);
     var today = block.querySelector('[data-action="today"]');
     var when = block.querySelector('.when');
+    var input = block.querySelector('input');
 
+    input.classList.toggle('empty', !input.value);
     block.querySelector('[data-action="clear"]').hidden = !value || !canEdit;
     if (today) today.hidden = Boolean(value) || !canEdit;
 

@@ -53,28 +53,33 @@ Raden med 👥 skrivs bara när personerna har ändrats från standard. Rader so
 ## NWO
 
 Håll koll på beställningar. En anteckning kan hålla flera beställningar från olika ställen, var och en med
-**Företag**, **Vara**, **Fraktbolag**, **Beställd**, **Skickad** och **Bedömt levdatum**.
+**Företag**, en eller flera **Varor**, **Fraktbolag**, **Beställd**, **Skickad** och **Bedömt levdatum**.
 
-- Beställningarna visas som en lista. Varje rad visar vara, företag och fraktbolag, och till höger det senaste
+- Beställningarna visas som en lista. Varje rad visar varorna, företag och fraktbolag, och till höger det senaste
   steget: bedömt levdatum med hur många dagar det är kvar, annars skickad, annars beställd.
 - Tryck på en beställning för att fälla ut den och ändra fälten. **Klar** fäller ihop den igen.
   En anteckning med bara en beställning visas utfälld direkt.
 - **Ny beställning** lägger till en beställning sist i listan.
 - **Ta bort beställning** frågar en gång till (*Tryck igen för att ta bort*). En tom beställning tas bort direkt.
-- Fraktbolag fylls i fritt, med förslag (PostNord, DHL, Budbee, Instabox med flera).
+- Varor: **Lägg till vara** ger en ny rad, och Enter på en vara med text gör samma sak. Enter på en tom rad
+  går vidare till Fraktbolag. Krysset tar bort varan. Tomma rader sparas inte.
+- Fraktbolag fylls i fritt. Under fältet finns knappar med vanliga fraktbolag (PostNord, DHL, Budbee, Instabox
+  med flera) som filtreras efter det man skriver. Det är egna knappar och inte en `<datalist>`, eftersom
+  Safaris förslagsfönster kan få en nedtryckt tangent att upprepas i fältet.
 - Datumen väljs i en datumväljare. Under varje datum står veckodag och hur långt det är dit eller sedan dess
   (t.ex. *Tisdag 3 november · om 7 dagar*). Beställd och Skickad har en knapp **Idag**.
 - Ett passerat bedömt levdatum visas i rött, idag och imorgon i blått.
 - Enter hoppar till nästa fält i samma beställning.
 - Anteckningslistan i Standard Notes visar till exempel
-  *2 beställningar: Skruvdragare (lev 3 nov), Vinterjacka (skickad 26 okt)*.
+  *2 beställningar: Skruvdragare +1 (lev 3 nov), Vinterjacka (skickad 26 okt)*.
 
-Allt sparas som vanlig text i anteckningen, ett block per beställning med en tom rad emellan, så det går att
-läsa även i andra editorer:
+Allt sparas som vanlig text i anteckningen, ett block per beställning med en tom rad emellan och en `Vara:`-rad
+per vara, så det går att läsa även i andra editorer:
 
 ```
 Företag: Webbutiken
 Vara: Skruvdragare
+Vara: Bitsats
 Fraktbolag: PostNord
 Beställd: 2026-10-27
 Skickad:
@@ -88,8 +93,7 @@ Skickad: 2026-10-26
 Bedömt levdatum: 2026-10-30
 ```
 
-Anteckningar från tidigare versioner fungerar som de är och blir en beställning. Flera `Vara:`-rader i samma
-block (från version 1.2) slås ihop till en vara med kommatecken.
+Anteckningar från tidigare versioner fungerar som de är; en anteckning från version 1 blir en beställning.
 
 Beställningar utan något ifyllt sparas inte. Rader som inte är fält ligger kvar oförändrade, i sin beställning
 om de står i ett block med fält, annars sist. Ett datum som skrivits på annat sätt än ÅÅÅÅ-MM-DD behålls och

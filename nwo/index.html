@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NWO (jagemyr)</title>
-  <link rel="stylesheet" href="nwo.css?v=2.0.0">
+  <link rel="stylesheet" href="nwo.css?v=2.1.0">
 </head>
 <body>
   <main class="page">
@@ -24,18 +24,6 @@
       </button>
     </div>
 
-    <datalist id="carriers">
-      <option value="PostNord">
-      <option value="DHL">
-      <option value="Budbee">
-      <option value="Instabox">
-      <option value="Bring">
-      <option value="DB Schenker">
-      <option value="UPS">
-      <option value="FedEx">
-      <option value="Airmee">
-      <option value="Early Bird">
-    </datalist>
   </main>
 
   <footer class="status" role="status" aria-live="polite">
@@ -63,15 +51,20 @@
           <input type="text" data-key="foretag" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
         </label>
 
-        <label class="field">
-          <span>Vara</span>
-          <input type="text" data-key="vara" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
-        </label>
+        <div class="field">
+          <span class="items-label">Varor</span>
+          <ul class="items"></ul>
+          <button type="button" class="link-btn add-item" data-action="add-item">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            Lägg till vara
+          </button>
+        </div>
 
-        <label class="field">
+        <div class="field">
           <span>Fraktbolag</span>
-          <input type="text" data-key="fraktbolag" list="carriers" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
-        </label>
+          <input type="text" data-key="fraktbolag" aria-label="Fraktbolag" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+          <div class="carriers"></div>
+        </div>
 
         <div class="field" data-date-field="bestalld">
           <span>Beställd</span>
@@ -110,7 +103,16 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=2.0.0"></script>
-  <script src="nwo.js?v=2.0.0"></script>
+  <template id="item-template">
+    <li class="item">
+      <input type="text" class="item-input" aria-label="Vara" autocomplete="off" autocapitalize="sentences" enterkeyhint="enter">
+      <button type="button" class="item-remove" data-action="remove-item" aria-label="Ta bort vara">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </li>
+  </template>
+
+  <script src="vendor/component-relay.js?v=2.1.0"></script>
+  <script src="nwo.js?v=2.1.0"></script>
 </body>
 </html>
