@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NWO (jagemyr)</title>
-  <link rel="stylesheet" href="nwo.css?v=2.2.0">
+  <link rel="stylesheet" href="nwo.css?v=2.3.0">
 </head>
 <body>
   <main class="page">
@@ -105,6 +105,21 @@
           <p class="when" hidden></p>
         </div>
 
+        <div class="field" data-date-field="hamtas">
+          <span>Redo att hämtas</span>
+          <div class="date-row">
+            <input type="date" data-key="hamtas" aria-label="Redo att hämtas">
+            <button type="button" class="link-btn" data-action="today" hidden>Idag</button>
+            <button type="button" class="link-btn" data-action="clear" hidden>Ta bort</button>
+          </div>
+          <p class="when" hidden></p>
+        </div>
+
+        <label class="field">
+          <span>Hämtställe</span>
+          <input type="text" data-key="hamtstalle" placeholder="Box eller utlämningsställe" autocomplete="off" autocapitalize="sentences" enterkeyhint="done">
+        </label>
+
         <p class="delivered-note" hidden></p>
 
         <div class="d-actions">
@@ -125,7 +140,7 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=2.2.0"></script>
-  <script src="nwo.js?v=2.2.0"></script>
+  <script src="vendor/component-relay.js?v=2.3.0"></script>
+  <script src="nwo.js?v=2.3.0"></script>
 </body>
 </html>

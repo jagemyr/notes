@@ -14,6 +14,8 @@
  *   Beställd: 2026-10-27
  *   Skickad:
  *   Bedömt levdatum: 2026-11-03
+ *   Redo att hämtas:
+ *   Hämtställe:
  *   Levererad:
  *
  * Rader som inte är fält (t.ex. något som skrivits i en annan editor) ligger kvar
@@ -22,7 +24,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '2.2.0';
+  var VERSION = '2.3.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var SETTLE_MS = 700;
@@ -48,6 +50,9 @@
     { key: 'skickad', label: 'Skickad', aliases: ['skickad', 'skickat', 'skickades', 'skickat datum', 'avsänd'] },
     // late: ett passerat datum visas i rött (leveransen borde ha kommit).
     { key: 'levdatum', label: 'Bedömt levdatum', late: true, aliases: ['bedömt levdatum', 'bedomt levdatum', 'bedömt leveransdatum', 'levdatum', 'leveransdatum'] },
+    // Paketet har kommit till en box eller ett utlämningsställe.
+    { key: 'hamtas', label: 'Redo att hämtas', aliases: ['redo att hämtas', 'redo att hamtas', 'kan hämtas', 'att hämta', 'hämtas', 'ankommen', 'ankommet'] },
+    { key: 'hamtstalle', label: 'Hämtställe', aliases: ['hämtställe', 'hamtstalle', 'utlämningsställe', 'uthämtningsställe', 'utlämning', 'ombud', 'paketbox', 'box'] },
     { key: 'levererad', label: 'Levererad', aliases: ['levererad', 'levererat', 'mottagen', 'mottaget', 'hämtad', 'hämtat'] }
   ];
 
@@ -126,6 +131,11 @@
     var items = filledItems(order);
     if (items.length) return items.every(function (item) { return item.done; });
     return Boolean(oneLine(order.values.levererad));
+  }
+
+  /** Redo att hämtas: har kommit till en box eller ett utlämningsställe men är inte levererad. */
+  function isReady(order) {
+    return !isDelivered(order) && Boolean(oneLine(order.values.hamtas));
   }
 
   function deliveredCount(order) {
@@ -274,7 +284,7 @@
   /**
    * Förhandsvisningen i anteckningslistan.
    * En beställning: "Skruvdragare +1 · Webbutiken · PostNord · lev 3 nov".
-   * Flera: "2 på väg, 1 levererad: Skruvdragare +1 (lev 3 nov), Vinterjacka (skickad 26 okt)".
+   * Flera: "1 att hämta, 1 på väg, 1 levererad: Skruvdragare +1 (att hämta), Vinterjacka (lev 3 nov)".
    */
   function preview(orders) {
     var filled = orders.filter(hasContent);
@@ -288,20 +298,36 @@
       return truncate(parts.join(' · '));
     }
     var active = filled.filter(function (order) { return !isDelivered(order); });
-    var doneCount = filled.length - active.length;
     if (!active.length) return truncate('Alla ' + filled.length + ' levererade');
-    var head = active.length + ' på väg' + (doneCount ? ', ' + doneCount + (doneCount === 1 ? ' levererad' : ' levererade') : '');
-    return truncate(head + ': ' + active.map(function (order) {
+    // Det som kan hämtas står först.
+    active.sort(function (a, b) { return Number(isReady(b)) - Number(isReady(a)); });
+    return truncate(countText(filled, ', ') + ': ' + active.map(function (order) {
       var title = shortTitle(order) || 'Beställning';
       var s = stepText(order);
       return s ? title + ' (' + s + ')' : title;
     }).join(', '));
   }
 
+  /** "1 att hämta, 2 på väg, 1 levererad" – bara de delar som finns. */
+  function countText(filled, separator) {
+    var ready = filled.filter(isReady).length;
+    var done = filled.filter(isDelivered).length;
+    var onTheWay = filled.length - ready - done;
+    var parts = [];
+    if (ready) parts.push(ready + ' att hämta');
+    if (onTheWay) parts.push(onTheWay + ' på väg');
+    if (done) parts.push(done + (done === 1 ? ' levererad' : ' levererade'));
+    return parts.join(separator);
+  }
+
   function stepText(order) {
     if (isDelivered(order)) {
       var date = parseIso(order.values.levererad);
       return 'levererad' + (date ? ' ' + shortDate(date) : '');
+    }
+    if (isReady(order)) {
+      var place = oneLine(order.values.hamtstalle);
+      return 'att hämta' + (place ? ' ' + place : '');
     }
     var latest = latestStep(order);
     if (!latest) return '';
@@ -803,13 +829,13 @@
   function renderCount() {
     var filled = state.orders.filter(hasContent);
     var doneCount = filled.filter(isDelivered).length;
-    var activeCount = filled.length - doneCount;
-    if (!doneCount) {
+    var readyCount = filled.filter(isReady).length;
+    if (!doneCount && !readyCount) {
       el.count.textContent = filled.length === 1 ? '1 beställning' : filled.length + ' beställningar';
-    } else if (!activeCount) {
+    } else if (doneCount === filled.length) {
       el.count.textContent = doneCount === 1 ? '1 levererad' : 'Alla ' + doneCount + ' levererade';
     } else {
-      el.count.textContent = activeCount + ' på väg · ' + doneCount + (doneCount === 1 ? ' levererad' : ' levererade');
+      el.count.textContent = countText(filled, ' · ');
     }
   }
 
@@ -860,6 +886,7 @@
     var delivered = isDelivered(order);
     var total = filledItems(order).length;
     var doneItems = deliveredCount(order);
+    card.classList.toggle('ready', isReady(order));
 
     var check = card.querySelector('.order-check');
     setFlag(check, 'checked', delivered);
@@ -871,7 +898,12 @@
     title.textContent = text || 'Ny beställning';
     title.classList.toggle('placeholder', !text);
 
+    var place = oneLine(order.values.hamtstalle);
     var meta = [total ? oneLine(order.values.foretag) : '', oneLine(order.values.fraktbolag)];
+    // Var paketet ska hämtas är det viktigaste när det väntar, så det står först.
+    if (place) {
+      if (isReady(order)) meta.unshift(place); else meta.push(place);
+    }
     if (!delivered && doneItems > 0) meta.push(doneItems + ' av ' + total + ' levererade');
     card.querySelector('.s-meta').textContent = meta.filter(Boolean).join(' · ');
     renderStatus(card, order, delivered);
@@ -882,6 +914,7 @@
     var bottom = card.querySelector('.s-bottom');
     top.textContent = '';
     bottom.textContent = '';
+    top.className = 's-top';
     bottom.className = 's-bottom';
 
     if (delivered) {
@@ -889,6 +922,14 @@
       top.textContent = 'Levererad';
       bottom.textContent = date ? shortDate(date) : '';
       bottom.classList.add('ok');
+      return;
+    }
+
+    if (isReady(order)) {
+      var since = parseIso(order.values.hamtas);
+      top.textContent = 'Redo att hämtas';
+      top.classList.add('ready');
+      bottom.textContent = since ? relative(daysFromToday(since)) : oneLine(order.values.hamtas);
       return;
     }
 
@@ -1003,7 +1044,7 @@
     var rel = document.createElement('span');
     rel.textContent = relative(days);
     // Ett levdatum är bara försenat så länge beställningen inte har kommit.
-    if (field && field.late && !isDelivered(order)) rel.className = lateClass(days);
+    if (field && field.late && !isDelivered(order) && !isReady(order)) rel.className = lateClass(days);
     when.appendChild(document.createTextNode(longDate(date) + ' · '));
     when.appendChild(rel);
   }

@@ -53,16 +53,21 @@ Raden med 👥 skrivs bara när personerna har ändrats från standard. Rader so
 ## NWO
 
 Håll koll på beställningar. En anteckning kan hålla flera beställningar från olika ställen, var och en med
-**Företag**, en eller flera **Varor**, **Fraktbolag**, **Beställd**, **Skickad**, **Bedömt levdatum** och **Levererad**.
+**Företag**, en eller flera **Varor**, **Fraktbolag**, **Beställd**, **Skickad**, **Bedömt levdatum**,
+**Redo att hämtas** med **Hämtställe**, och **Levererad**.
 
-- Beställningarna visas som en lista. Varje rad visar varorna, företag och fraktbolag, och till höger det senaste
-  steget: bedömt levdatum med hur många dagar det är kvar, annars skickad, annars beställd.
+- Beställningarna visas som en lista. Varje rad visar varorna, företag, fraktbolag och hämtställe, och till höger
+  det senaste steget: levererad, redo att hämtas, bedömt levdatum med hur många dagar det är kvar, skickad
+  eller beställd.
 - Tryck på en beställning för att fälla ut den och ändra fälten. **Klar** fäller ihop den igen.
   En anteckning med bara en beställning visas utfälld direkt.
 - **Ny beställning** lägger till en beställning sist i listan.
 - **Ta bort beställning** frågar en gång till (*Tryck igen för att ta bort*). En tom beställning tas bort direkt.
 - Varor: **Lägg till vara** ger en ny rad, och Enter på en vara med text gör samma sak. Enter på en tom rad
   går vidare till Fraktbolag. Krysset tar bort varan. Tomma rader sparas inte.
+- **Redo att hämtas:** fyll i datumet (eller tryck **Idag**) när paketet har kommit till en box eller ett
+  utlämningsställe, och skriv var i **Hämtställe**. Raden får en orange kant och visar *Redo att hämtas*
+  och hur länge paketet har väntat. Bocka av beställningen när den är hämtad.
 - **Levererad:** bocken framför en vara markerar den som levererad med dagens datum (varan stryks över).
   När alla varor är bockade är beställningen levererad. Bocken framför beställningen bockar av alla varor
   på en gång (eller av dem igen); är bara några varor levererade visar den ett streck och raden *1 av 2 levererade*.
@@ -72,11 +77,11 @@ Håll koll på beställningar. En anteckning kan hålla flera beställningar fr�
   med flera) som filtreras efter det man skriver. Det är egna knappar och inte en `<datalist>`, eftersom
   Safaris förslagsfönster kan få en nedtryckt tangent att upprepas i fältet.
 - Datumen väljs i en datumväljare. Under varje datum står veckodag och hur långt det är dit eller sedan dess
-  (t.ex. *Tisdag 3 november · om 7 dagar*). Beställd och Skickad har en knapp **Idag**.
-- Ett passerat bedömt levdatum visas i rött, idag och imorgon i blått.
+  (t.ex. *Tisdag 3 november · om 7 dagar*). Beställd, Skickad och Redo att hämtas har en knapp **Idag**.
+- Ett passerat bedömt levdatum visas i rött, idag och imorgon i blått (inte när paketet redan har kommit).
 - Enter hoppar till nästa fält i samma beställning.
 - Anteckningslistan i Standard Notes visar till exempel
-  *2 på väg, 1 levererad: Skruvdragare +1 (lev 3 nov), Vinterjacka (skickad 26 okt)*.
+  *1 att hämta, 1 på väg, 1 levererad: Skruvdragare +1 (att hämta Paketboxen), Vinterjacka (lev 30 okt)*.
 
 Allt sparas som vanlig text i anteckningen, ett block per beställning med en tom rad emellan och en `Vara:`-rad
 per vara, så det går att läsa även i andra editorer. En levererad vara får `✅` och datum efter namnet, och
@@ -90,6 +95,8 @@ Fraktbolag: PostNord
 Beställd: 2026-10-27
 Skickad:
 Bedömt levdatum: 2026-11-03
+Redo att hämtas: 2026-10-30
+Hämtställe: Paketboxen vid stationen
 Levererad:
 
 Företag: Begagnatsajten
@@ -98,6 +105,8 @@ Fraktbolag: Budbee
 Beställd: 2026-10-25
 Skickad: 2026-10-26
 Bedömt levdatum: 2026-10-30
+Redo att hämtas:
+Hämtställe:
 Levererad: 2026-10-28
 ```
 
