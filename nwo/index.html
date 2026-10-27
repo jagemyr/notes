@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NWO (jagemyr)</title>
-  <link rel="stylesheet" href="nwo.css?v=1.0.1">
+  <link rel="stylesheet" href="nwo.css?v=1.1.0">
 </head>
 <body>
   <main class="page">
@@ -31,13 +31,33 @@
         <input type="text" data-key="fraktbolag" list="carriers" autocomplete="off" autocapitalize="sentences" enterkeyhint="next" disabled>
       </label>
 
-      <div class="field">
+      <div class="field" data-date-field="bestalld">
+        <label for="bestalld">Beställd</label>
+        <div class="date-row">
+          <input type="date" id="bestalld" data-key="bestalld" disabled>
+          <button type="button" class="link-btn" data-action="today" hidden>Idag</button>
+          <button type="button" class="link-btn" data-action="clear" hidden>Ta bort</button>
+        </div>
+        <p class="when" hidden></p>
+      </div>
+
+      <div class="field" data-date-field="skickad">
+        <label for="skickad">Skickad</label>
+        <div class="date-row">
+          <input type="date" id="skickad" data-key="skickad" disabled>
+          <button type="button" class="link-btn" data-action="today" hidden>Idag</button>
+          <button type="button" class="link-btn" data-action="clear" hidden>Ta bort</button>
+        </div>
+        <p class="when" hidden></p>
+      </div>
+
+      <div class="field" data-date-field="levdatum">
         <label for="levdatum">Bedömt levdatum</label>
         <div class="date-row">
           <input type="date" id="levdatum" data-key="levdatum" disabled>
-          <button type="button" class="link-btn" id="clear-date" hidden>Ta bort</button>
+          <button type="button" class="link-btn" data-action="clear" hidden>Ta bort</button>
         </div>
-        <p class="when" id="when" hidden></p>
+        <p class="when" hidden></p>
       </div>
     </div>
 
@@ -56,11 +76,11 @@
   </main>
 
   <footer class="status" role="status" aria-live="polite">
-    <span id="filled">0 av 4 ifyllda</span>
+    <span id="filled">0 av 6 ifyllda</span>
     <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
   </footer>
 
-  <script src="vendor/component-relay.js?v=1.0.1"></script>
-  <script src="nwo.js?v=1.0.1"></script>
+  <script src="vendor/component-relay.js?v=1.1.0"></script>
+  <script src="nwo.js?v=1.1.0"></script>
 </body>
 </html>

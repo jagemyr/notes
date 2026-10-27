@@ -1,12 +1,14 @@
 /*
  * NWO (jagemyr) – mall för Standard Notes med fälten
- * Företag, Vara, Fraktbolag och Bedömt levdatum.
+ * Företag, Vara, Fraktbolag, Beställd, Skickad och Bedömt levdatum.
  *
  * Fälten sparas som vanlig text i anteckningen, en rad per fält:
  *
  *   Företag: Exempelbolaget
  *   Vara: Skruvdragare
  *   Fraktbolag: PostNord
+ *   Beställd: 2026-10-27
+ *   Skickad: 2026-10-29
  *   Bedömt levdatum: 2026-11-03
  *
  * Rader som inte är fält (t.ex. något som skrivits i en annan editor)
@@ -15,7 +17,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.0.1';
+  var VERSION = '1.1.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var PREVIEW_LENGTH = 90;
   var MONTHS = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
@@ -25,19 +27,32 @@
     { key: 'foretag', label: 'Företag', aliases: ['foretag', 'företag'] },
     { key: 'vara', label: 'Vara', aliases: ['vara'] },
     { key: 'fraktbolag', label: 'Fraktbolag', aliases: ['fraktbolag', 'frakt'] },
-    { key: 'levdatum', label: 'Bedömt levdatum', aliases: ['bedömt levdatum', 'bedomt levdatum', 'bedömt leveransdatum', 'levdatum', 'leveransdatum'] }
+    { key: 'bestalld', label: 'Beställd', aliases: ['beställd', 'bestalld', 'beställt', 'beställning', 'beställningsdatum', 'orderdatum'] },
+    { key: 'skickad', label: 'Skickad', aliases: ['skickad', 'skickat', 'skickades', 'skickat datum', 'avsänd'] },
+    // late: ett passerat datum visas i rött (leveransen borde ha kommit).
+    { key: 'levdatum', label: 'Bedömt levdatum', late: true, aliases: ['bedömt levdatum', 'bedomt levdatum', 'bedömt leveransdatum', 'levdatum', 'leveransdatum'] }
   ];
 
   var el = {
     notice: document.getElementById('notice'),
     lockedBanner: document.getElementById('locked-banner'),
     inputs: Array.prototype.slice.call(document.querySelectorAll('[data-key]')),
-    date: document.getElementById('levdatum'),
-    clearDate: document.getElementById('clear-date'),
-    when: document.getElementById('when'),
     filled: document.getElementById('filled'),
     saveState: document.getElementById('save-state')
   };
+
+  // Ett block per datumfält: väljaren, knapparna Idag och Ta bort, och raden under.
+  var dateFields = Array.prototype.slice.call(document.querySelectorAll('[data-date-field]')).map(function (block) {
+    var key = block.getAttribute('data-date-field');
+    return {
+      key: key,
+      field: FIELDS.filter(function (f) { return f.key === key; })[0],
+      input: block.querySelector('input[type="date"]'),
+      today: block.querySelector('[data-action="today"]'),
+      clear: block.querySelector('[data-action="clear"]'),
+      when: block.querySelector('.when')
+    };
+  });
 
   var state = {
     connected: false,
@@ -133,6 +148,15 @@
   function shortDate(date) {
     var text = date.d + ' ' + MONTHS[date.m - 1];
     return date.y !== new Date().getFullYear() ? text + ' ' + date.y : text;
+  }
+
+  function todayIso() {
+    var now = new Date();
+    return now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+  }
+
+  function pad(n) {
+    return (n < 10 ? '0' : '') + n;
   }
 
   function relative(days) {
@@ -254,12 +278,19 @@
     });
   }
 
-  /** Förhandsvisningen i anteckningslistan, t.ex. "Skruvdragare · Exempelbolaget · PostNord · lev 3 nov". */
+  /**
+   * Förhandsvisningen i anteckningslistan, t.ex. "Skruvdragare · Exempelbolaget · PostNord · lev 3 nov".
+   * Datumet är det senaste steget som är ifyllt: bedömt levdatum, annars skickad, annars beställd.
+   */
   function preview(values) {
     var parts = [values.vara, values.foretag, values.fraktbolag].map(oneLine).filter(Boolean);
-    if (values.levdatum) {
-      var date = parseIso(values.levdatum);
-      parts.push('lev ' + (date ? shortDate(date) : oneLine(values.levdatum)));
+    var steps = [['levdatum', 'lev'], ['skickad', 'skickad'], ['bestalld', 'beställd']];
+    for (var i = 0; i < steps.length; i++) {
+      var value = oneLine(values[steps[i][0]]);
+      if (!value) continue;
+      var date = parseIso(value);
+      parts.push(steps[i][1] + ' ' + (date ? shortDate(date) : value));
+      break;
     }
     return parts.join(' · ').slice(0, PREVIEW_LENGTH);
   }
@@ -272,7 +303,7 @@
       var value = input.value;
       if (state.values[input.dataset.key] === value) return;
       state.values[input.dataset.key] = value;
-      if (input.type === 'date') renderDate();
+      if (input.type === 'date') renderDates();
       renderFilled();
       save();
     };
@@ -291,18 +322,25 @@
     });
   });
 
-  el.clearDate.addEventListener('click', function () {
+  dateFields.forEach(function (d) {
+    if (d.today) {
+      d.today.addEventListener('click', function () { setDate(d, todayIso()); });
+    }
+    d.clear.addEventListener('click', function () { setDate(d, ''); });
+  });
+
+  function setDate(d, value) {
     if (state.locked || !state.note) return;
-    state.values.levdatum = '';
-    el.date.value = '';
-    renderDate();
+    state.values[d.key] = value;
+    d.input.value = value;
+    renderDates();
     renderFilled();
     save();
-  });
+  }
 
   // Uppdatera "om N dagar" när man kommer tillbaka till appen en annan dag.
   document.addEventListener('visibilitychange', function () {
-    if (!document.hidden) renderDate();
+    if (!document.hidden) renderDates();
   });
 
   // ---------- Rendering ----------
@@ -323,7 +361,7 @@
         input.readOnly = state.locked;
       }
     });
-    renderDate();
+    renderDates();
     renderFilled();
     if (isNewNote) {
       var page = document.querySelector('.page');
@@ -331,29 +369,37 @@
     }
   }
 
-  function renderDate() {
-    var value = state.values.levdatum || '';
-    var date = parseIso(value);
-    el.date.classList.toggle('empty', !el.date.value);
-    el.clearDate.hidden = !value || state.locked;
+  function renderDates() {
+    dateFields.forEach(renderDate);
+  }
 
-    el.when.textContent = '';
+  function renderDate(d) {
+    var value = state.values[d.key] || '';
+    var date = parseIso(value);
+    var editable = Boolean(state.note) && !state.locked;
+    d.input.classList.toggle('empty', !d.input.value);
+    d.clear.hidden = !value || !editable;
+    if (d.today) d.today.hidden = Boolean(value) || !editable;
+
+    d.when.textContent = '';
     if (!value) {
-      el.when.hidden = true;
+      d.when.hidden = true;
       return;
     }
-    el.when.hidden = false;
+    d.when.hidden = false;
     if (!date) {
-      el.when.textContent = 'I anteckningen står: ' + value;
+      d.when.textContent = 'I anteckningen står: ' + value;
       return;
     }
     var days = daysFromToday(date);
     var rel = document.createElement('span');
     rel.textContent = relative(days);
-    if (days < 0) rel.className = 'late';
-    else if (days <= 1) rel.className = 'soon';
-    el.when.appendChild(document.createTextNode(longDate(date) + ' · '));
-    el.when.appendChild(rel);
+    if (d.field && d.field.late) {
+      if (days < 0) rel.className = 'late';
+      else if (days <= 1) rel.className = 'soon';
+    }
+    d.when.appendChild(document.createTextNode(longDate(date) + ' · '));
+    d.when.appendChild(rel);
   }
 
   function renderFilled() {

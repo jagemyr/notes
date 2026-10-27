@@ -52,13 +52,16 @@ Raden med 👥 skrivs bara när personerna har ändrats från standard. Rader so
 
 ## NWO
 
-En mall med fyra fält: **Företag**, **Vara**, **Fraktbolag** och **Bedömt levdatum**.
+En mall med sex fält: **Företag**, **Vara**, **Fraktbolag**, **Beställd**, **Skickad** och **Bedömt levdatum**.
 
 - Fraktbolag fylls i fritt, med förslag (PostNord, DHL, Budbee, Instabox med flera).
-- Bedömt levdatum väljs i en datumväljare. Under fältet står veckodag och hur långt det är kvar
-  (t.ex. *Tisdag 3 november · om 7 dagar*). Passerade datum visas i rött.
+- Datumen väljs i en datumväljare. Under varje datum står veckodag och hur långt det är dit eller sedan dess
+  (t.ex. *Tisdag 3 november · om 7 dagar*).
+- Beställd och Skickad har en knapp **Idag** som fyller i dagens datum.
+- Ett passerat bedömt levdatum visas i rött.
 - Enter hoppar till nästa fält.
-- Anteckningslistan visar vara, företag, fraktbolag och datum, t.ex. *Skruvdragare · Exempelbolaget · PostNord · lev 3 nov*.
+- Anteckningslistan visar vara, företag, fraktbolag och det senaste ifyllda datumet
+  (bedömt levdatum, annars skickad, annars beställd), t.ex. *Skruvdragare · Exempelbolaget · PostNord · lev 3 nov*.
 
 Fälten sparas som vanlig text i anteckningen, en rad per fält, så de går att läsa även i andra editorer:
 
@@ -66,8 +69,12 @@ Fälten sparas som vanlig text i anteckningen, en rad per fält, så de går att
 Företag: Exempelbolaget
 Vara: Skruvdragare
 Fraktbolag: PostNord
+Beställd: 2026-10-27
+Skickad: 2026-10-29
 Bedömt levdatum: 2026-11-03
 ```
+
+Anteckningar från version 1.0 (utan Beställd och Skickad) fungerar som de är; de nya raderna läggs till när något ändras.
 
 Rader som inte är fält ligger kvar oförändrade under fälten. Ett datum som skrivits på annat sätt än ÅÅÅÅ-MM-DD
 behålls och visas under datumfältet tills ett nytt datum väljs.
