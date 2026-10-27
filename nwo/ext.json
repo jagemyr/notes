@@ -3,12 +3,12 @@
   "name": "NWO (jagemyr)",
   "content_type": "SN|Component",
   "area": "editor-editor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Mall med fälten Företag, Vara, Fraktbolag och Bedömt levdatum. Fälten sparas som vanlig text i anteckningen.",
-  "url": "https://jagemyr.github.io/notes/nwo/index.html?v=1.0.0",
+  "url": "https://jagemyr.github.io/notes/nwo/index.html?v=1.0.1",
   "latest_url": "https://jagemyr.github.io/notes/nwo/ext.json",
   "marketing_url": "https://github.com/jagemyr/notes",
-  "note_type": "plain",
+  "note_type": "plain-text",
   "file_type": "txt",
   "interchangeable": false
 }
