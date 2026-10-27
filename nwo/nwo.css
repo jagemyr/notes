@@ -65,13 +65,20 @@ button, input { font: inherit; color: inherit; }
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
+.order-head {
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+}
+
 .summary {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   min-height: 58px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px 10px 14px;
+  padding: 10px 12px 10px 0;
   border: 0;
   background: transparent;
   text-align: left;
@@ -117,6 +124,103 @@ button, input { font: inherit; color: inherit; }
 .s-bottom { color: var(--muted); }
 .s-bottom.soon { color: var(--accent); font-weight: 600; }
 .s-bottom.late { color: var(--danger); font-weight: 600; }
+.s-bottom.ok { color: var(--success); font-weight: 600; }
+
+/* ---------- Bockar (levererad) ---------- */
+
+/* 44 px tryckyta runt en rund ruta, som i Todo. */
+.check {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.check::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--muted);
+  border-radius: 50%;
+  box-sizing: border-box;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.check:checked::before {
+  border-color: var(--success);
+  background:
+    var(--success)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12.5l4 4 8-9' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 16px no-repeat;
+}
+
+/* Delvis levererad: ett streck. */
+.check:indeterminate::before {
+  border-color: var(--success);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 12h10' fill='none' stroke='%231f9d5c' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / 16px no-repeat;
+}
+
+.check:focus-visible::before { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+.check:disabled { cursor: default; opacity: 0.4; }
+
+.item .check { width: 36px; margin-left: -6px; }
+.item .check::before { width: 20px; height: 20px; }
+.item .check:checked::before { background-size: 14px; }
+
+.item.is-done .item-input {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.delivered-note {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* En beställning som just blev levererad tonas ner innan den flyttas. */
+.order.completing { opacity: 0.55; transition: opacity 0.3s; }
+
+/* ---------- Levererade ---------- */
+
+.done-section { padding-bottom: 24px; }
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  max-width: 600px;
+  padding: 8px max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.done-list { padding-top: 8px; }
+.done-list .order { opacity: 0.8; }
+.done-list .order.expanded { opacity: 1; }
+
+.done-list .s-title {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  color: var(--muted);
+}
 
 .chevron {
   flex: none;
@@ -174,7 +278,7 @@ button, input { font: inherit; color: inherit; }
   letter-spacing: 0.04em;
 }
 
-.field input {
+.field input:not([type="checkbox"]) {
   width: 100%;
   min-width: 0;
   height: 44px;
@@ -185,8 +289,8 @@ button, input { font: inherit; color: inherit; }
   outline: none;
 }
 
-.field input:focus { border-color: var(--accent); }
-.field input:disabled { opacity: 0.6; }
+.field input:not([type="checkbox"]):focus { border-color: var(--accent); }
+.field input:not([type="checkbox"]):disabled { opacity: 0.6; }
 .field input[readonly] { cursor: default; }
 
 /* Tomt datumfält: gör platshållaren lika dämpad som i textfälten. */
@@ -226,7 +330,7 @@ button, input { font: inherit; color: inherit; }
   gap: 4px;
 }
 
-.item input { flex: 1; }
+.item .item-input { flex: 1; }
 
 .item-remove {
   flex: none;
@@ -324,5 +428,5 @@ button, input { font: inherit; color: inherit; }
 .save-state.error { color: var(--danger); font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) {
-  .chevron { transition: none; }
+  .chevron, .check::before, .order.completing { transition: none; }
 }

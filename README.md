@@ -53,7 +53,7 @@ Raden med 👥 skrivs bara när personerna har ändrats från standard. Rader so
 ## NWO
 
 Håll koll på beställningar. En anteckning kan hålla flera beställningar från olika ställen, var och en med
-**Företag**, en eller flera **Varor**, **Fraktbolag**, **Beställd**, **Skickad** och **Bedömt levdatum**.
+**Företag**, en eller flera **Varor**, **Fraktbolag**, **Beställd**, **Skickad**, **Bedömt levdatum** och **Levererad**.
 
 - Beställningarna visas som en lista. Varje rad visar varorna, företag och fraktbolag, och till höger det senaste
   steget: bedömt levdatum med hur många dagar det är kvar, annars skickad, annars beställd.
@@ -63,6 +63,11 @@ Håll koll på beställningar. En anteckning kan hålla flera beställningar fr�
 - **Ta bort beställning** frågar en gång till (*Tryck igen för att ta bort*). En tom beställning tas bort direkt.
 - Varor: **Lägg till vara** ger en ny rad, och Enter på en vara med text gör samma sak. Enter på en tom rad
   går vidare till Fraktbolag. Krysset tar bort varan. Tomma rader sparas inte.
+- **Levererad:** bocken framför en vara markerar den som levererad med dagens datum (varan stryks över).
+  När alla varor är bockade är beställningen levererad. Bocken framför beställningen bockar av alla varor
+  på en gång (eller av dem igen); är bara några varor levererade visar den ett streck och raden *1 av 2 levererade*.
+- En levererad beställning tonas ner, fälls ihop och flyttas efter en kort stund till **Levererade** längst ner.
+  **Rensa** tar bort alla levererade beställningar efter ett andra tryck.
 - Fraktbolag fylls i fritt. Under fältet finns knappar med vanliga fraktbolag (PostNord, DHL, Budbee, Instabox
   med flera) som filtreras efter det man skriver. Det är egna knappar och inte en `<datalist>`, eftersom
   Safaris förslagsfönster kan få en nedtryckt tangent att upprepas i fältet.
@@ -71,27 +76,32 @@ Håll koll på beställningar. En anteckning kan hålla flera beställningar fr�
 - Ett passerat bedömt levdatum visas i rött, idag och imorgon i blått.
 - Enter hoppar till nästa fält i samma beställning.
 - Anteckningslistan i Standard Notes visar till exempel
-  *2 beställningar: Skruvdragare +1 (lev 3 nov), Vinterjacka (skickad 26 okt)*.
+  *2 på väg, 1 levererad: Skruvdragare +1 (lev 3 nov), Vinterjacka (skickad 26 okt)*.
 
 Allt sparas som vanlig text i anteckningen, ett block per beställning med en tom rad emellan och en `Vara:`-rad
-per vara, så det går att läsa även i andra editorer:
+per vara, så det går att läsa även i andra editorer. En levererad vara får `✅` och datum efter namnet, och
+`Levererad:` fylls i med senaste datumet när alla varor har kommit:
 
 ```
 Företag: Webbutiken
-Vara: Skruvdragare
+Vara: Skruvdragare ✅ 2026-10-29
 Vara: Bitsats
 Fraktbolag: PostNord
 Beställd: 2026-10-27
 Skickad:
 Bedömt levdatum: 2026-11-03
+Levererad:
 
 Företag: Begagnatsajten
-Vara: Vinterjacka
+Vara: Vinterjacka ✅ 2026-10-28
 Fraktbolag: Budbee
 Beställd: 2026-10-25
 Skickad: 2026-10-26
 Bedömt levdatum: 2026-10-30
+Levererad: 2026-10-28
 ```
+
+Skriver man `Levererad: datum` för hand i en annan editor räknas alla varor i beställningen som levererade.
 
 Anteckningar från tidigare versioner fungerar som de är; en anteckning från version 1 blir en beställning.
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NWO (jagemyr)</title>
-  <link rel="stylesheet" href="nwo.css?v=2.1.0">
+  <link rel="stylesheet" href="nwo.css?v=2.2.0">
 </head>
 <body>
   <main class="page">
@@ -24,6 +24,13 @@
       </button>
     </div>
 
+    <section class="done-section" id="done-section" hidden>
+      <div class="section-head">
+        <h2 id="done-title">Levererade</h2>
+        <button type="button" class="link-btn" id="clear-done">Rensa</button>
+      </div>
+      <ul class="orders done-list" id="done-list" aria-labelledby="done-title"></ul>
+    </section>
   </main>
 
   <footer class="status" role="status" aria-live="polite">
@@ -33,17 +40,20 @@
 
   <template id="order-template">
     <li class="order">
-      <button type="button" class="summary" aria-expanded="false">
-        <span class="s-main">
-          <span class="s-title"></span>
-          <span class="s-meta"></span>
-        </span>
-        <span class="s-status">
-          <span class="s-top"></span>
-          <span class="s-bottom"></span>
-        </span>
-        <svg class="chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
+      <div class="order-head">
+        <input type="checkbox" class="check order-check" aria-label="Levererad">
+        <button type="button" class="summary" aria-expanded="false">
+          <span class="s-main">
+            <span class="s-title"></span>
+            <span class="s-meta"></span>
+          </span>
+          <span class="s-status">
+            <span class="s-top"></span>
+            <span class="s-bottom"></span>
+          </span>
+          <svg class="chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
 
       <div class="details" hidden>
         <label class="field">
@@ -95,6 +105,8 @@
           <p class="when" hidden></p>
         </div>
 
+        <p class="delivered-note" hidden></p>
+
         <div class="d-actions">
           <button type="button" class="link-btn" data-action="collapse">Klar</button>
           <button type="button" class="link-btn danger" data-action="remove">Ta bort beställning</button>
@@ -105,6 +117,7 @@
 
   <template id="item-template">
     <li class="item">
+      <input type="checkbox" class="check item-check" aria-label="Levererad">
       <input type="text" class="item-input" aria-label="Vara" autocomplete="off" autocapitalize="sentences" enterkeyhint="enter">
       <button type="button" class="item-remove" data-action="remove-item" aria-label="Ta bort vara">
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -112,7 +125,7 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=2.1.0"></script>
-  <script src="nwo.js?v=2.1.0"></script>
+  <script src="vendor/component-relay.js?v=2.2.0"></script>
+  <script src="nwo.js?v=2.2.0"></script>
 </body>
 </html>

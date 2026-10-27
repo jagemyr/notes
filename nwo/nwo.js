@@ -1,22 +1,20 @@
 /*
  * NWO (jagemyr) – beställningar i Standard Notes. En anteckning kan hålla flera
  * beställningar, var och en med Företag, en eller flera Varor, Fraktbolag, Beställd,
- * Skickad och Bedömt levdatum.
+ * Skickad, Bedömt levdatum och Levererad.
  *
  * Allt sparas som vanlig text i anteckningen: ett block per beställning, en rad per
- * fält, en Vara-rad per vara och en tom rad mellan beställningarna.
+ * fält, en Vara-rad per vara och en tom rad mellan beställningarna. En levererad vara
+ * får ✅ och datum efter namnet; Levererad fylls i när alla varor är levererade.
  *
  *   Företag: Webbutiken
- *   Vara: Skruvdragare
+ *   Vara: Skruvdragare ✅ 2026-10-29
  *   Vara: Bitsats
  *   Fraktbolag: PostNord
  *   Beställd: 2026-10-27
  *   Skickad:
  *   Bedömt levdatum: 2026-11-03
- *
- *   Företag: Begagnatsajten
- *   Vara: Vinterjacka
- *   ...
+ *   Levererad:
  *
  * Rader som inte är fält (t.ex. något som skrivits i en annan editor) ligger kvar
  * oförändrade: i sin beställning om de står i ett block med fält, annars sist.
@@ -24,12 +22,17 @@
 (function () {
   'use strict';
 
-  var VERSION = '2.1.0';
+  var VERSION = '2.2.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
+  var SETTLE_MS = 700;
   var PREVIEW_LENGTH = 90;
   var MONTHS = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
   var FIELD_LINE = /^\s*([^:]{1,40}?)\s*:(.*)$/;
+  // "Skruvdragare ✅ 2026-10-29": bocken och det som står efter den (helst ett datum).
+  var DONE_MARK = /\s*✅\s*(.*?)\s*$/;
+  // Levererad utan datum (t.ex. bara ✅ skrivet för hand).
+  var DONE_NO_DATE = 'ja';
 
   // Förslag under Fraktbolag. Egna knappar i stället för <datalist>: Safaris förslagsfönster
   // öppnas mitt i tangenttrycket och kan få tangenten att upprepas (PPPP…).
@@ -44,10 +47,11 @@
     { key: 'bestalld', label: 'Beställd', aliases: ['beställd', 'bestalld', 'beställt', 'beställning', 'beställningsdatum', 'orderdatum'] },
     { key: 'skickad', label: 'Skickad', aliases: ['skickad', 'skickat', 'skickades', 'skickat datum', 'avsänd'] },
     // late: ett passerat datum visas i rött (leveransen borde ha kommit).
-    { key: 'levdatum', label: 'Bedömt levdatum', late: true, aliases: ['bedömt levdatum', 'bedomt levdatum', 'bedömt leveransdatum', 'levdatum', 'leveransdatum'] }
+    { key: 'levdatum', label: 'Bedömt levdatum', late: true, aliases: ['bedömt levdatum', 'bedomt levdatum', 'bedömt leveransdatum', 'levdatum', 'leveransdatum'] },
+    { key: 'levererad', label: 'Levererad', aliases: ['levererad', 'levererat', 'mottagen', 'mottaget', 'hämtad', 'hämtat'] }
   ];
 
-  // Statusen i listan visar det senaste steget som är ifyllt.
+  // Statusen i listan visar det senaste steget som är ifyllt (levererad visas för sig).
   var STEPS = [
     { key: 'levdatum', label: 'Lev', preview: 'lev' },
     { key: 'skickad', label: 'Skickad', preview: 'skickad' },
@@ -55,9 +59,14 @@
   ];
 
   var el = {
+    page: document.querySelector('.page'),
     notice: document.getElementById('notice'),
     lockedBanner: document.getElementById('locked-banner'),
     orders: document.getElementById('orders'),
+    doneSection: document.getElementById('done-section'),
+    doneTitle: document.getElementById('done-title'),
+    doneList: document.getElementById('done-list'),
+    clearDone: document.getElementById('clear-done'),
     addOrder: document.getElementById('add-order'),
     template: document.getElementById('order-template'),
     itemTemplate: document.getElementById('item-template'),
@@ -73,7 +82,11 @@
     rest: '',
     expanded: -1,
     confirmIndex: -1,
+    confirmClear: false,
     confirmTimer: null,
+    // En beställning som just blev levererad står kvar en stund innan den flyttas ner.
+    settlingIndex: -1,
+    settleTimer: null,
     lastSentText: null,
     // De senaste texterna vi själva har sparat. En sparning kan komma tillbaka från appen
     // efter att man har skrivit vidare, och ska då inte skriva över fälten.
@@ -88,9 +101,17 @@
     return { values: values, extra: [] };
   }
 
+  function emptyItem() {
+    return { text: '', done: '' };
+  }
+
   /** Varorna som har text (tomma rader i formuläret sparas inte). */
   function filledItems(order) {
-    return order.values.vara.map(oneLine).filter(Boolean);
+    return order.values.vara.filter(function (item) { return oneLine(item.text); });
+  }
+
+  function itemNames(order) {
+    return filledItems(order).map(function (item) { return oneLine(item.text); });
   }
 
   /** En beställning utan något ifyllt sparas inte (den finns bara i formuläret). */
@@ -100,16 +121,60 @@
     }) || order.extra.some(function (line) { return line.trim(); });
   }
 
+  /** Levererad: alla varor är bockade, eller (utan varor) Levererad är ifyllt. */
+  function isDelivered(order) {
+    var items = filledItems(order);
+    if (items.length) return items.every(function (item) { return item.done; });
+    return Boolean(oneLine(order.values.levererad));
+  }
+
+  function deliveredCount(order) {
+    return filledItems(order).filter(function (item) { return item.done; }).length;
+  }
+
+  /** Håller Levererad i takt med varornas bockar: senaste datumet när alla är levererade. */
+  function syncDelivered(order) {
+    var items = filledItems(order);
+    if (!items.length) return;
+    if (!items.every(function (item) { return item.done; })) {
+      order.values.levererad = '';
+      return;
+    }
+    var dates = items.map(function (item) { return item.done; }).filter(parseIso).sort();
+    order.values.levererad = dates.length ? dates[dates.length - 1] : (oneLine(order.values.levererad) || DONE_NO_DATE);
+  }
+
+  /** Efter inläsning: "Levererad: datum" skrivet för hand bockar av varor som saknar bock. */
+  function normalize(order) {
+    var levererad = oneLine(order.values.levererad);
+    var items = filledItems(order);
+    if (levererad && items.length && !items.every(function (item) { return item.done; })) {
+      items.forEach(function (item) { if (!item.done) item.done = levererad; });
+    }
+    syncDelivered(order);
+  }
+
+  function setDelivered(order, delivered) {
+    var items = filledItems(order);
+    var today = todayIso();
+    if (items.length) {
+      items.forEach(function (item) { item.done = delivered ? (item.done || today) : ''; });
+      syncDelivered(order);
+    } else {
+      order.values.levererad = delivered ? today : '';
+    }
+  }
+
   /** Rubrik i listan: varorna, annars företaget. */
   function orderTitle(order) {
-    return filledItems(order).join(', ') || oneLine(order.values.foretag);
+    return itemNames(order).join(', ') || oneLine(order.values.foretag);
   }
 
   /** Kort namn i förhandsvisningen: första varan och "+N" för resten. */
   function shortTitle(order) {
-    var items = filledItems(order);
-    if (!items.length) return oneLine(order.values.foretag);
-    return items[0] + (items.length > 1 ? ' +' + (items.length - 1) : '');
+    var names = itemNames(order);
+    if (!names.length) return oneLine(order.values.foretag);
+    return names[0] + (names.length > 1 ? ' +' + (names.length - 1) : '');
   }
 
   /** Senaste ifyllda steget: { step, value, date } eller null. */
@@ -129,6 +194,12 @@
       if (FIELDS[i].aliases.indexOf(wanted) !== -1) return FIELDS[i];
     }
     return null;
+  }
+
+  function parseItem(value) {
+    var m = DONE_MARK.exec(value);
+    if (!m) return { text: value, done: '' };
+    return { text: value.slice(0, m.index).trim(), done: m[1] || DONE_NO_DATE };
   }
 
   function parse(text) {
@@ -159,7 +230,8 @@
         }
         seen[field.key] = true;
         if (field.multi) {
-          if (value) current.values[field.key].push(value);
+          var item = parseItem(value);
+          if (item.text || item.done) current.values[field.key].push(item);
         } else {
           current.values[field.key] = value;
         }
@@ -168,7 +240,14 @@
       if (loose.length) restBlocks.push(loose.join('\n'));
     });
 
+    orders.forEach(normalize);
     return { orders: orders, rest: restBlocks.join('\n\n') };
+  }
+
+  function serializeItem(item) {
+    var text = oneLine(item.text);
+    if (!item.done) return text;
+    return text + ' ✅' + (item.done !== DONE_NO_DATE ? ' ' + oneLine(item.done) : '');
   }
 
   function serialize(orders, rest) {
@@ -178,7 +257,7 @@
     var blocks = filled.map(function (order) {
       var lines = [];
       FIELDS.forEach(function (f) {
-        var values = f.multi ? filledItems(order) : [oneLine(order.values[f.key])];
+        var values = f.multi ? filledItems(order).map(serializeItem) : [oneLine(order.values[f.key])];
         if (!values.length) values = [''];
         values.forEach(function (v) { lines.push(f.label + ':' + (v ? ' ' + v : '')); });
       });
@@ -195,21 +274,24 @@
   /**
    * Förhandsvisningen i anteckningslistan.
    * En beställning: "Skruvdragare +1 · Webbutiken · PostNord · lev 3 nov".
-   * Flera: "2 beställningar: Skruvdragare +1 (lev 3 nov), Vinterjacka (skickad 26 okt)".
+   * Flera: "2 på väg, 1 levererad: Skruvdragare +1 (lev 3 nov), Vinterjacka (skickad 26 okt)".
    */
   function preview(orders) {
     var filled = orders.filter(hasContent);
     if (!filled.length) return '';
     if (filled.length === 1) {
       var o = filled[0];
-      var items = filledItems(o);
-      var itemText = items.length ? shortTitle(o) : '';
+      var itemText = itemNames(o).length ? shortTitle(o) : '';
       var parts = [itemText, o.values.foretag, o.values.fraktbolag].map(oneLine).filter(Boolean);
       var s = stepText(o);
       if (s) parts.push(s);
       return truncate(parts.join(' · '));
     }
-    return truncate(filled.length + ' beställningar: ' + filled.map(function (order) {
+    var active = filled.filter(function (order) { return !isDelivered(order); });
+    var doneCount = filled.length - active.length;
+    if (!active.length) return truncate('Alla ' + filled.length + ' levererade');
+    var head = active.length + ' på väg' + (doneCount ? ', ' + doneCount + (doneCount === 1 ? ' levererad' : ' levererade') : '');
+    return truncate(head + ': ' + active.map(function (order) {
       var title = shortTitle(order) || 'Beställning';
       var s = stepText(order);
       return s ? title + ' (' + s + ')' : title;
@@ -217,6 +299,10 @@
   }
 
   function stepText(order) {
+    if (isDelivered(order)) {
+      var date = parseIso(order.values.levererad);
+      return 'levererad' + (date ? ' ' + shortDate(date) : '');
+    }
     var latest = latestStep(order);
     if (!latest) return '';
     return latest.step.preview + ' ' + (latest.date ? shortDate(latest.date) : latest.value);
@@ -348,6 +434,7 @@
       state.lastSentText = null;
       state.sentTexts = [];
       resetConfirm();
+      stopSettling();
       setSaveState('', '');
     }
 
@@ -361,6 +448,7 @@
         state.orders = parsed.orders;
         state.rest = parsed.rest;
         if (!state.orders.length) state.orders.push(emptyOrder());
+        stopSettling();
         // En ensam beställning visas utfälld; flera visas som en lista.
         if (isNewNote || state.expanded >= state.orders.length) {
           state.expanded = state.orders.length === 1 ? 0 : -1;
@@ -371,7 +459,7 @@
 
     if (isNewNote || textChanged || wasLocked !== state.locked) {
       render();
-      if (isNewNote) el.orders.parentNode.scrollTop = 0;
+      if (isNewNote) el.page.scrollTop = 0;
     }
   });
 
@@ -410,17 +498,18 @@
 
   // ---------- Händelser ----------
 
-  function indexIn(list, node) {
-    return node ? Array.prototype.indexOf.call(list.children, node) : -1;
-  }
-
   function orderIndex(target) {
-    return indexIn(el.orders, target.closest('.order'));
+    var card = target.closest('.order');
+    return card ? Number(card.getAttribute('data-index')) : -1;
   }
 
   function itemIndex(target) {
     var row = target.closest('.item');
-    return row ? indexIn(row.parentNode, row) : -1;
+    return row ? Array.prototype.indexOf.call(row.parentNode.children, row) : -1;
+  }
+
+  function cardFor(index) {
+    return document.querySelector('.order[data-index="' + index + '"]');
   }
 
   /**
@@ -429,15 +518,18 @@
    */
   function onInput(event) {
     var input = event.target;
-    if (input.tagName !== 'INPUT' || !editable()) return;
+    if (input.tagName !== 'INPUT' || input.type === 'checkbox' || !editable()) return;
     var card = input.closest('.order');
     var order = state.orders[orderIndex(input)];
     if (!order) return;
 
     if (input.classList.contains('item-input')) {
-      var i = itemIndex(input);
-      if (i < 0 || order.values.vara[i] === input.value) return;
-      order.values.vara[i] = input.value;
+      var item = order.values.vara[itemIndex(input)];
+      if (!item || item.text === input.value) return;
+      item.text = input.value;
+      // En vara utan text kan inte vara levererad.
+      if (!oneLine(item.text)) item.done = '';
+      syncDelivered(order);
       renderItemControls(card, order, true);
     } else {
       var key = input.getAttribute('data-key');
@@ -448,16 +540,41 @@
       }
       if (key === 'fraktbolag') renderCarriers(card, order, true);
     }
-    renderSummary(card, order);
+    renderSummary(card, order, true);
     renderCount();
     save();
   }
 
-  el.orders.addEventListener('input', onInput);
-  // Vissa Android-datumväljare skickar bara change.
-  el.orders.addEventListener('change', onInput);
+  /** Bockarna: en vara, eller hela beställningen. */
+  function onCheck(event) {
+    var box = event.target;
+    if (box.type !== 'checkbox') return;
+    var index = orderIndex(box);
+    var order = state.orders[index];
+    if (!order || !editable()) { render(); return; }
+    var wasDelivered = isDelivered(order);
 
-  el.orders.addEventListener('click', function (event) {
+    if (box.classList.contains('item-check')) {
+      var item = order.values.vara[itemIndex(box)];
+      if (!item) return;
+      item.done = box.checked ? todayIso() : '';
+      syncDelivered(order);
+    } else if (box.classList.contains('order-check')) {
+      setDelivered(order, !wasDelivered);
+    }
+
+    var nowDelivered = isDelivered(order);
+    if (nowDelivered && !wasDelivered) settle(index);
+    render();
+    save();
+  }
+
+  el.page.addEventListener('input', onInput);
+  el.page.addEventListener('change', function (event) {
+    if (event.target.type === 'checkbox') onCheck(event); else onInput(event);
+  });
+
+  el.page.addEventListener('click', function (event) {
     var index = orderIndex(event.target);
     if (index < 0) return;
 
@@ -478,7 +595,7 @@
     }
     if (!editable()) return;
     var order = state.orders[index];
-    var card = el.orders.children[index];
+    var card = cardFor(index);
 
     if (button.hasAttribute('data-carrier')) {
       order.values.fraktbolag = button.getAttribute('data-carrier');
@@ -492,12 +609,13 @@
     } else if (action === 'add-item') {
       var items = order.values.vara;
       // Återanvänd en tom sista rad i stället för att lägga till en till.
-      if (!items.length || oneLine(items[items.length - 1])) items.push('');
+      if (!items.length || oneLine(items[items.length - 1].text)) items.push(emptyItem());
       renderItems(card, order, true, items.length - 1);
     } else if (action === 'remove-item') {
       var i = itemIndex(button);
       if (i < 0) return;
       order.values.vara.splice(i, 1);
+      syncDelivered(order);
       render();
       save();
     } else if (action === 'remove') {
@@ -505,11 +623,12 @@
     }
   });
 
-  el.orders.addEventListener('keydown', function (event) {
+  el.page.addEventListener('keydown', function (event) {
     var input = event.target;
-    if (event.key !== 'Enter' || input.tagName !== 'INPUT' || input.type === 'date') return;
-    event.preventDefault();
+    if (event.key !== 'Enter' || input.tagName !== 'INPUT' || input.type === 'date' || input.type === 'checkbox') return;
     var card = input.closest('.order');
+    if (!card) return;
+    event.preventDefault();
 
     // Enter på en vara med text ger en ny rad under; Enter på en tom rad går vidare till Fraktbolag.
     if (input.classList.contains('item-input') && editable()) {
@@ -520,28 +639,54 @@
         return;
       }
       var next = order.values.vara[i + 1];
-      if (next === undefined || oneLine(next)) order.values.vara.splice(i + 1, 0, '');
+      if (!next || oneLine(next.text)) order.values.vara.splice(i + 1, 0, emptyItem());
       renderItems(card, order, true, i + 1);
       return;
     }
 
     // Annars: nästa fält i samma beställning (ingen <form>, se README).
-    var all = Array.prototype.slice.call(card.querySelectorAll('.details input'));
+    var all = Array.prototype.slice.call(card.querySelectorAll('.details input:not([type="checkbox"])'));
     var following = all[all.indexOf(input) + 1];
     if (following) following.focus(); else input.blur();
   });
 
   el.addOrder.addEventListener('click', function () {
     if (!editable()) return;
-    // Återanvänd en tom sista beställning i stället för att lägga till en till.
-    var last = state.orders[state.orders.length - 1];
-    if (!last || hasContent(last)) state.orders.push(emptyOrder());
-    state.expanded = state.orders.length - 1;
+    // Återanvänd en tom beställning i stället för att lägga till en till.
+    var emptyIndex = -1;
+    state.orders.forEach(function (order, i) { if (!hasContent(order)) emptyIndex = i; });
+    if (emptyIndex < 0) {
+      state.orders.push(emptyOrder());
+      emptyIndex = state.orders.length - 1;
+    }
+    state.expanded = emptyIndex;
     resetConfirm();
     render();
-    var card = el.orders.children[state.expanded];
+    var card = cardFor(emptyIndex);
     scrollIntoView(card);
     card.querySelector('[data-key="foretag"]').focus();
+  });
+
+  /** Rensa: tar bort alla levererade beställningar, efter ett andra tryck. */
+  el.clearDone.addEventListener('click', function () {
+    if (!editable()) return;
+    if (!state.confirmClear) {
+      resetConfirm();
+      state.confirmClear = true;
+      state.confirmTimer = setTimeout(function () { resetConfirm(); render(); }, CONFIRM_MS);
+      render();
+      return;
+    }
+    resetConfirm();
+    stopSettling();
+    state.orders = state.orders.filter(function (order) { return !(hasContent(order) && isDelivered(order)); });
+    state.expanded = -1;
+    if (!state.orders.length) {
+      state.orders.push(emptyOrder());
+      state.expanded = 0;
+    }
+    render();
+    save();
   });
 
   // Uppdatera "om N dagar" när man kommer tillbaka till appen en annan dag.
@@ -553,7 +698,26 @@
     state.expanded = state.expanded === index ? -1 : index;
     resetConfirm();
     render();
-    if (state.expanded === index) scrollIntoView(el.orders.children[index]);
+    if (state.expanded === index) scrollIntoView(cardFor(index));
+  }
+
+  /** Låt en nyss levererad beställning stå kvar en stund, fäll ihop den och flytta ner den. */
+  function settle(index) {
+    stopSettling();
+    state.settlingIndex = index;
+    state.settleTimer = setTimeout(function () {
+      state.settlingIndex = -1;
+      state.settleTimer = null;
+      var order = state.orders[index];
+      if (state.expanded === index && order && isDelivered(order)) state.expanded = -1;
+      render();
+    }, SETTLE_MS);
+  }
+
+  function stopSettling() {
+    clearTimeout(state.settleTimer);
+    state.settleTimer = null;
+    state.settlingIndex = -1;
   }
 
   /** Första trycket frågar, andra tar bort. En tom beställning tas bort direkt. */
@@ -562,14 +726,12 @@
     if (hasContent(order) && state.confirmIndex !== index) {
       resetConfirm();
       state.confirmIndex = index;
-      state.confirmTimer = setTimeout(function () {
-        state.confirmIndex = -1;
-        render();
-      }, CONFIRM_MS);
+      state.confirmTimer = setTimeout(function () { resetConfirm(); render(); }, CONFIRM_MS);
       render();
       return;
     }
     resetConfirm();
+    stopSettling();
     state.orders.splice(index, 1);
     if (state.expanded === index) state.expanded = -1;
     else if (state.expanded > index) state.expanded--;
@@ -585,6 +747,7 @@
     clearTimeout(state.confirmTimer);
     state.confirmTimer = null;
     state.confirmIndex = -1;
+    state.confirmClear = false;
   }
 
   function scrollIntoView(node) {
@@ -594,37 +757,69 @@
 
   // ---------- Rendering ----------
 
-  /** Ritar listan. Korten byggs bara om när antalet ändras, så att fokus och markör står kvar. */
+  /** Ritar båda listorna: på väg överst, levererade under rubriken Levererade. */
   function render() {
     var canEdit = editable();
     el.lockedBanner.hidden = !state.locked;
 
-    if (el.orders.children.length !== state.orders.length) {
-      el.orders.textContent = '';
-      state.orders.forEach(function () {
-        el.orders.appendChild(el.template.content.firstElementChild.cloneNode(true));
-      });
-    }
-
-    Array.prototype.forEach.call(el.orders.children, function (card, i) {
-      renderCard(card, state.orders[i], i, canEdit);
+    var active = [];
+    var done = [];
+    state.orders.forEach(function (order, i) {
+      var inDone = hasContent(order) && isDelivered(order) && i !== state.settlingIndex;
+      (inDone ? done : active).push(i);
     });
+
+    syncList(el.orders, active, canEdit);
+    syncList(el.doneList, done, canEdit);
+
+    el.doneSection.hidden = !done.length;
+    el.doneTitle.textContent = 'Levererade (' + done.length + ')';
+    el.clearDone.hidden = !canEdit;
+    el.clearDone.textContent = state.confirmClear ? 'Tryck igen för att rensa' : 'Rensa';
+    el.clearDone.classList.toggle('confirm', state.confirmClear);
 
     el.addOrder.hidden = !canEdit;
     renderCount();
   }
 
+  /** Korten byggs bara om när listans sammansättning ändras, så att fokus och markör står kvar. */
+  function syncList(list, indices, canEdit) {
+    var signature = indices.join(',');
+    if (list.getAttribute('data-signature') !== signature) {
+      list.setAttribute('data-signature', signature);
+      list.textContent = '';
+      indices.forEach(function (i) {
+        var card = el.template.content.firstElementChild.cloneNode(true);
+        card.setAttribute('data-index', String(i));
+        list.appendChild(card);
+      });
+    }
+    Array.prototype.forEach.call(list.children, function (card) {
+      var i = Number(card.getAttribute('data-index'));
+      renderCard(card, state.orders[i], i, canEdit);
+    });
+  }
+
   function renderCount() {
-    var n = state.orders.filter(hasContent).length;
-    el.count.textContent = n === 1 ? '1 beställning' : n + ' beställningar';
+    var filled = state.orders.filter(hasContent);
+    var doneCount = filled.filter(isDelivered).length;
+    var activeCount = filled.length - doneCount;
+    if (!doneCount) {
+      el.count.textContent = filled.length === 1 ? '1 beställning' : filled.length + ' beställningar';
+    } else if (!activeCount) {
+      el.count.textContent = doneCount === 1 ? '1 levererad' : 'Alla ' + doneCount + ' levererade';
+    } else {
+      el.count.textContent = activeCount + ' på väg · ' + doneCount + (doneCount === 1 ? ' levererad' : ' levererade');
+    }
   }
 
   function renderCard(card, order, index, canEdit) {
     var expanded = state.expanded === index;
     card.classList.toggle('expanded', expanded);
+    card.classList.toggle('completing', state.settlingIndex === index);
     card.querySelector('.summary').setAttribute('aria-expanded', String(expanded));
     card.querySelector('.details').hidden = !expanded;
-    renderSummary(card, order);
+    renderSummary(card, order, canEdit);
 
     Array.prototype.forEach.call(card.querySelectorAll('input[data-key]'), function (input) {
       var value = order.values[input.getAttribute('data-key')] || '';
@@ -646,6 +841,7 @@
     Array.prototype.forEach.call(card.querySelectorAll('[data-date-field]'), function (block) {
       renderDateBlock(block, order, canEdit);
     });
+    renderDeliveredNote(card, order);
 
     var remove = card.querySelector('[data-action="remove"]');
     var confirming = state.confirmIndex === index;
@@ -659,25 +855,44 @@
     if (node[name] !== value) node[name] = value;
   }
 
-  /** Rubrik, undertext och status i den ihopfällda raden. */
-  function renderSummary(card, order) {
+  /** Bock, rubrik, undertext och status i den ihopfällda raden. */
+  function renderSummary(card, order, canEdit) {
+    var delivered = isDelivered(order);
+    var total = filledItems(order).length;
+    var doneItems = deliveredCount(order);
+
+    var check = card.querySelector('.order-check');
+    setFlag(check, 'checked', delivered);
+    setFlag(check, 'indeterminate', !delivered && doneItems > 0);
+    setFlag(check, 'disabled', !canEdit || !hasContent(order));
+
     var title = card.querySelector('.s-title');
     var text = orderTitle(order);
     title.textContent = text || 'Ny beställning';
     title.classList.toggle('placeholder', !text);
-    var hasItems = filledItems(order).length > 0;
-    card.querySelector('.s-meta').textContent =
-      [hasItems ? oneLine(order.values.foretag) : '', oneLine(order.values.fraktbolag)].filter(Boolean).join(' · ');
-    renderStatus(card, order);
+
+    var meta = [total ? oneLine(order.values.foretag) : '', oneLine(order.values.fraktbolag)];
+    if (!delivered && doneItems > 0) meta.push(doneItems + ' av ' + total + ' levererade');
+    card.querySelector('.s-meta').textContent = meta.filter(Boolean).join(' · ');
+    renderStatus(card, order, delivered);
   }
 
-  function renderStatus(card, order) {
+  function renderStatus(card, order, delivered) {
     var top = card.querySelector('.s-top');
     var bottom = card.querySelector('.s-bottom');
-    var latest = latestStep(order);
     top.textContent = '';
     bottom.textContent = '';
     bottom.className = 's-bottom';
+
+    if (delivered) {
+      var date = parseIso(order.values.levererad);
+      top.textContent = 'Levererad';
+      bottom.textContent = date ? shortDate(date) : '';
+      bottom.classList.add('ok');
+      return;
+    }
+
+    var latest = latestStep(order);
     if (!latest) return;
     if (!latest.date) {
       top.textContent = latest.step.label;
@@ -697,7 +912,7 @@
   /** Varuraderna i ett kort. Raderna byggs bara om när antalet ändras. */
   function renderItems(card, order, canEdit, focusIndex) {
     var items = order.values.vara;
-    if (!items.length) items.push('');
+    if (!items.length) items.push(emptyItem());
     var list = card.querySelector('.items');
 
     if (list.children.length !== items.length) {
@@ -709,7 +924,7 @@
 
     Array.prototype.forEach.call(list.children, function (row, i) {
       var input = row.querySelector('.item-input');
-      if (input.value !== items[i]) input.value = items[i];
+      if (input.value !== items[i].text) input.value = items[i].text;
       setFlag(input, 'disabled', !state.note);
       setFlag(input, 'readOnly', state.locked);
       input.setAttribute('aria-label', 'Vara ' + (i + 1));
@@ -721,13 +936,21 @@
     }
   }
 
-  /** Kryssen, "Lägg till vara" och antalet i rubriken. */
+  /** Bockarna, kryssen, "Lägg till vara" och antalet i rubriken. */
   function renderItemControls(card, order, canEdit) {
     var items = order.values.vara;
     var list = card.querySelector('.items');
-    Array.prototype.forEach.call(list.children, function (row) {
+    Array.prototype.forEach.call(list.children, function (row, i) {
+      var item = items[i];
+      var hasText = Boolean(item && oneLine(item.text));
+      var check = row.querySelector('.item-check');
+      setFlag(check, 'checked', Boolean(item && item.done));
+      // En tom rad kan inte bockas av.
+      setFlag(check, 'disabled', !canEdit || !hasText);
+      check.setAttribute('aria-label', hasText ? 'Levererad: ' + oneLine(item.text) : 'Levererad');
+      row.classList.toggle('is-done', Boolean(item && item.done));
       // Den enda raden går inte att ta bort så länge den är tom.
-      row.querySelector('.item-remove').hidden = !canEdit || (items.length === 1 && !oneLine(items[0]));
+      row.querySelector('.item-remove').hidden = !canEdit || (items.length === 1 && !hasText);
     });
     var count = filledItems(order).length;
     card.querySelector('.items-label').textContent = count > 1 ? 'Varor (' + count + ')' : 'Varor';
@@ -779,9 +1002,19 @@
     var days = daysFromToday(date);
     var rel = document.createElement('span');
     rel.textContent = relative(days);
-    if (field && field.late) rel.className = lateClass(days);
+    // Ett levdatum är bara försenat så länge beställningen inte har kommit.
+    if (field && field.late && !isDelivered(order)) rel.className = lateClass(days);
     when.appendChild(document.createTextNode(longDate(date) + ' · '));
     when.appendChild(rel);
+  }
+
+  function renderDeliveredNote(card, order) {
+    var note = card.querySelector('.delivered-note');
+    var delivered = hasContent(order) && isDelivered(order);
+    note.hidden = !delivered;
+    if (!delivered) return;
+    var date = parseIso(order.values.levererad);
+    note.textContent = date ? 'Levererad ' + longDate(date).toLowerCase() : 'Levererad';
   }
 
   function setSaveState(label, kind) {
