@@ -1,0 +1,153 @@
+/*
+ * Färger och typsnitt kommer från Standard Notes aktiva tema (--sn-stylekit-*).
+ * Värdet efter kommatecknet används bara utanför appen.
+ */
+:root {
+  --bg: var(--sn-stylekit-editor-background-color, #ffffff);
+  --fg: var(--sn-stylekit-editor-foreground-color, #1b1b1f);
+  --muted: var(--sn-stylekit-neutral-color, #8a8a93);
+  --border: var(--sn-stylekit-border-color, #e3e3e8);
+  --accent: var(--sn-stylekit-info-color, #086dd6);
+  --danger: var(--sn-stylekit-danger-color, #cc2128);
+  --success: var(--sn-stylekit-success-color, #1f9d5c);
+  --bar-bg: var(--sn-stylekit-background-color, #f7f7f9);
+  --field-bg: var(--sn-stylekit-contrast-background-color, #f2f2f5);
+  --font: var(--sn-stylekit-sans-serif-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  --font-size: var(--sn-stylekit-font-size-editor, 16px);
+  --gutter: 16px;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: var(--font-size);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+button, input { font: inherit; color: inherit; }
+
+.page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- Fält ---------- */
+
+.fields {
+  display: grid;
+  gap: 16px;
+  max-width: 560px;
+  padding: 20px max(var(--gutter), env(safe-area-inset-right)) 24px max(var(--gutter), env(safe-area-inset-left));
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field > span,
+.field > label {
+  font-size: 0.75em;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--field-bg);
+  outline: none;
+}
+
+.field input:focus { border-color: var(--accent); }
+.field input:disabled { opacity: 0.6; }
+.field input[readonly] { cursor: default; }
+
+/* Tomt datumfält: gör platshållaren lika dämpad som i textfälten. */
+.field input[type="date"].empty { color: var(--muted); }
+
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.date-row input { flex: 1; }
+
+.link-btn {
+  flex: none;
+  border: 0;
+  padding: 6px 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.when {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.when .soon { color: var(--accent); font-weight: 600; }
+.when .late { color: var(--danger); font-weight: 600; }
+
+/* ---------- Meddelanden ---------- */
+
+.notice,
+.locked-banner {
+  margin: 16px;
+  color: var(--muted);
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.notice {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.notice code { color: var(--fg); }
+.diag { margin: 10px 0 0; font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); user-select: all; }
+.locked-banner { margin-bottom: 0; font-weight: 600; color: var(--fg); }
+
+/* ---------- Statusrad ---------- */
+
+.status {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px var(--gutter) calc(6px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--bar-bg);
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.save-state.saved { color: var(--accent); }
+.save-state.error { color: var(--danger); font-weight: 600; }

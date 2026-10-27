@@ -8,6 +8,7 @@ Egna plugins till [Standard Notes](https://standardnotes.com), publicerade med G
 | Plugin | Typ | Installationsadress |
 |---|---|---|
 | Todo | Editor | `https://jagemyr.github.io/notes/todo/ext.json` |
+| NWO | Editor | `https://jagemyr.github.io/notes/nwo/ext.json` |
 | Testeditor | Editor | `https://jagemyr.github.io/notes/test-editor/ext.json` |
 
 ## Todo
@@ -49,6 +50,28 @@ Uppgifterna sparas som vanlig text i anteckningen, en per rad, så de går att l
 
 Raden med 👥 skrivs bara när personerna har ändrats från standard. Rader som inte är uppgifter blir uppgifter när listan sparas.
 
+## NWO
+
+En mall med fyra fält: **Företag**, **Vara**, **Fraktbolag** och **Bedömt levdatum**.
+
+- Fraktbolag fylls i fritt, med förslag (PostNord, DHL, Budbee, Instabox med flera).
+- Bedömt levdatum väljs i en datumväljare. Under fältet står veckodag och hur långt det är kvar
+  (t.ex. *Tisdag 3 november · om 7 dagar*). Passerade datum visas i rött.
+- Enter hoppar till nästa fält.
+- Anteckningslistan visar vara, företag, fraktbolag och datum, t.ex. *Skruvdragare · Exempelbolaget · PostNord · lev 3 nov*.
+
+Fälten sparas som vanlig text i anteckningen, en rad per fält, så de går att läsa även i andra editorer:
+
+```
+Företag: Exempelbolaget
+Vara: Skruvdragare
+Fraktbolag: PostNord
+Bedömt levdatum: 2026-11-03
+```
+
+Rader som inte är fält ligger kvar oförändrade under fälten. Ett datum som skrivits på annat sätt än ÅÅÅÅ-MM-DD
+behålls och visas under datumfältet tills ett nytt datum väljs.
+
 ## Installera
 
 1. Öppna Standard Notes → **Preferences → Plugins**.
@@ -67,6 +90,12 @@ notes/
 │   ├── core.js            Textformat, datum och upprepning (utan gränssnitt)
 │   ├── todo.js            Gränssnittet
 │   ├── todo.css
+│   └── vendor/
+├── nwo/
+│   ├── ext.json
+│   ├── index.html
+│   ├── nwo.js             Textformat och gränssnitt
+│   ├── nwo.css
 │   └── vendor/
 └── test-editor/
     ├── ext.json           Beskrivningsfilen som Standard Notes läser

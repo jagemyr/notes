@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>NWO (jagemyr)</title>
+  <link rel="stylesheet" href="nwo.css?v=1.0.0">
+</head>
+<body>
+  <main class="page">
+    <div class="notice" id="notice" hidden>
+      Den här sidan är en editor för Standard Notes och väntar på att appen ska ansluta.
+      Installera den med adressen till <code>ext.json</code> under Preferences → Plugins → Install Custom Plugin.
+      <pre class="diag" id="diag"></pre>
+    </div>
+    <div class="locked-banner" id="locked-banner" hidden>Anteckningen är låst.</div>
+
+    <div class="fields" id="fields">
+      <label class="field">
+        <span>Företag</span>
+        <input type="text" data-key="foretag" autocomplete="off" autocapitalize="sentences" enterkeyhint="next" disabled>
+      </label>
+
+      <label class="field">
+        <span>Vara</span>
+        <input type="text" data-key="vara" autocomplete="off" autocapitalize="sentences" enterkeyhint="next" disabled>
+      </label>
+
+      <label class="field">
+        <span>Fraktbolag</span>
+        <input type="text" data-key="fraktbolag" list="carriers" autocomplete="off" autocapitalize="sentences" enterkeyhint="next" disabled>
+      </label>
+
+      <div class="field">
+        <label for="levdatum">Bedömt levdatum</label>
+        <div class="date-row">
+          <input type="date" id="levdatum" data-key="levdatum" disabled>
+          <button type="button" class="link-btn" id="clear-date" hidden>Ta bort</button>
+        </div>
+        <p class="when" id="when" hidden></p>
+      </div>
+    </div>
+
+    <datalist id="carriers">
+      <option value="PostNord">
+      <option value="DHL">
+      <option value="Budbee">
+      <option value="Instabox">
+      <option value="Bring">
+      <option value="DB Schenker">
+      <option value="UPS">
+      <option value="FedEx">
+      <option value="Airmee">
+      <option value="Early Bird">
+    </datalist>
+  </main>
+
+  <footer class="status" role="status" aria-live="polite">
+    <span id="filled">0 av 4 ifyllda</span>
+    <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
+  </footer>
+
+  <script src="vendor/component-relay.js?v=1.0.0"></script>
+  <script src="nwo.js?v=1.0.0"></script>
+</body>
+</html>
