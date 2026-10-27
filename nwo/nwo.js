@@ -1,11 +1,12 @@
 /*
  * NWO (jagemyr) – mall för Standard Notes med fälten
- * Företag, Vara, Fraktbolag, Beställd, Skickad och Bedömt levdatum.
+ * Företag, Varor, Fraktbolag, Beställd, Skickad och Bedömt levdatum.
  *
- * Fälten sparas som vanlig text i anteckningen, en rad per fält:
+ * Fälten sparas som vanlig text i anteckningen, en rad per fält och en Vara-rad per vara:
  *
  *   Företag: Exempelbolaget
  *   Vara: Skruvdragare
+ *   Vara: Bitsats
  *   Fraktbolag: PostNord
  *   Beställd: 2026-10-27
  *   Skickad: 2026-10-29
@@ -17,7 +18,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.1.1';
+  var VERSION = '1.2.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var PREVIEW_LENGTH = 90;
   var MONTHS = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
@@ -25,7 +26,8 @@
   // Ordningen här är ordningen i anteckningen. Alias gör att rader skrivna för hand också känns igen.
   var FIELDS = [
     { key: 'foretag', label: 'Företag', aliases: ['foretag', 'företag'] },
-    { key: 'vara', label: 'Vara', aliases: ['vara'] },
+    // multi: fältet kan förekomma flera gånger, en rad per vara.
+    { key: 'vara', label: 'Vara', multi: true, aliases: ['vara', 'varor'] },
     { key: 'fraktbolag', label: 'Fraktbolag', aliases: ['fraktbolag', 'frakt'] },
     { key: 'bestalld', label: 'Beställd', aliases: ['beställd', 'bestalld', 'beställt', 'beställning', 'beställningsdatum', 'orderdatum'] },
     { key: 'skickad', label: 'Skickad', aliases: ['skickad', 'skickat', 'skickades', 'skickat datum', 'avsänd'] },
@@ -37,6 +39,11 @@
     notice: document.getElementById('notice'),
     lockedBanner: document.getElementById('locked-banner'),
     inputs: Array.prototype.slice.call(document.querySelectorAll('[data-key]')),
+    items: document.getElementById('items'),
+    itemsLabel: document.getElementById('items-label'),
+    addItem: document.getElementById('add-item'),
+    itemTemplate: document.getElementById('item-template'),
+    fraktbolag: document.querySelector('[data-key="fraktbolag"]'),
     filled: document.getElementById('filled'),
     saveState: document.getElementById('save-state')
   };
@@ -70,8 +77,13 @@
 
   function emptyValues() {
     var values = {};
-    FIELDS.forEach(function (f) { values[f.key] = ''; });
+    FIELDS.forEach(function (f) { values[f.key] = f.multi ? [] : ''; });
     return values;
+  }
+
+  /** Varorna som faktiskt har text (tomma rader i formuläret sparas inte). */
+  function filledItems(values) {
+    return values.vara.map(oneLine).filter(Boolean);
   }
 
   function fieldByLabel(label) {
@@ -89,7 +101,10 @@
     String(text || '').replace(/\r\n?/g, '\n').split('\n').forEach(function (line) {
       var m = /^\s*([^:]{1,40}?)\s*:(.*)$/.exec(line);
       var field = m && fieldByLabel(m[1]);
-      if (field && !seen[field.key]) {
+      if (field && field.multi) {
+        var item = m[2].trim();
+        if (item) values[field.key].push(item);
+      } else if (field && !seen[field.key]) {
         seen[field.key] = true;
         values[field.key] = m[2].trim();
       } else {
@@ -102,9 +117,17 @@
   }
 
   function serialize(values, rest) {
-    var lines = FIELDS.map(function (f) {
+    var lines = [];
+    FIELDS.forEach(function (f) {
+      if (f.multi) {
+        var items = values[f.key].map(oneLine).filter(Boolean);
+        // En tom rad behålls så att mallen syns även i andra editorer.
+        if (!items.length) items = [''];
+        items.forEach(function (item) { lines.push(f.label + ':' + (item ? ' ' + item : '')); });
+        return;
+      }
       var v = oneLine(values[f.key]);
-      return f.label + ':' + (v ? ' ' + v : '');
+      lines.push(f.label + ':' + (v ? ' ' + v : ''));
     });
     if (rest) lines.push('', rest);
     return lines.join('\n');
@@ -279,11 +302,14 @@
   }
 
   /**
-   * Förhandsvisningen i anteckningslistan, t.ex. "Skruvdragare · Exempelbolaget · PostNord · lev 3 nov".
-   * Datumet är det senaste steget som är ifyllt: bedömt levdatum, annars skickad, annars beställd.
+   * Förhandsvisningen i anteckningslistan, t.ex. "Skruvdragare +2 · Exempelbolaget · PostNord · lev 3 nov".
+   * Första varan visas och "+N" för resten. Datumet är det senaste steget som är ifyllt:
+   * bedömt levdatum, annars skickad, annars beställd.
    */
   function preview(values) {
-    var parts = [values.vara, values.foretag, values.fraktbolag].map(oneLine).filter(Boolean);
+    var items = filledItems(values);
+    var itemText = items.length ? items[0] + (items.length > 1 ? ' +' + (items.length - 1) : '') : '';
+    var parts = [itemText, values.foretag, values.fraktbolag].map(oneLine).filter(Boolean);
     var steps = [['levdatum', 'lev'], ['skickad', 'skickad'], ['bestalld', 'beställd']];
     for (var i = 0; i < steps.length; i++) {
       var value = oneLine(values[steps[i][0]]);
@@ -297,7 +323,7 @@
 
   // ---------- Händelser ----------
 
-  el.inputs.forEach(function (input, index) {
+  el.inputs.forEach(function (input) {
     var onEdit = function () {
       if (state.locked || !state.note) return;
       var value = input.value;
@@ -315,11 +341,69 @@
     input.addEventListener('keydown', function (event) {
       if (event.key !== 'Enter' || input.type === 'date') return;
       event.preventDefault();
-      setTimeout(function () {
-        var next = el.inputs[index + 1];
-        if (next) next.focus(); else input.blur();
-      }, 0);
+      setTimeout(function () { focusNext(input); }, 0);
     });
+  });
+
+  /** Nästa fält i formuläret, räknat i sidans ordning (varuraderna kommer och går). */
+  function focusNext(input) {
+    var all = Array.prototype.slice.call(document.querySelectorAll('.fields input'));
+    var next = all[all.indexOf(input) + 1];
+    if (next) next.focus(); else input.blur();
+  }
+
+  // ---------- Varor ----------
+
+  function rowIndex(target) {
+    var row = target.closest('.item');
+    return row ? Array.prototype.indexOf.call(el.items.children, row) : -1;
+  }
+
+  el.items.addEventListener('input', function (event) {
+    if (!event.target.classList.contains('item-input')) return;
+    if (state.locked || !state.note) return;
+    var index = rowIndex(event.target);
+    if (index < 0) return;
+    state.values.vara[index] = event.target.value;
+    renderItems();
+    renderFilled();
+    save();
+  });
+
+  el.items.addEventListener('click', function (event) {
+    var button = event.target.closest('.item-remove');
+    if (!button || state.locked || !state.note) return;
+    var index = rowIndex(button);
+    if (index < 0) return;
+    state.values.vara.splice(index, 1);
+    renderItems();
+    renderFilled();
+    save();
+  });
+
+  // Enter på en vara med text ger en ny rad under; Enter på en tom rad går vidare till Fraktbolag.
+  el.items.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter' || !event.target.classList.contains('item-input')) return;
+    event.preventDefault();
+    if (state.locked) return;
+    var index = rowIndex(event.target);
+    if (!oneLine(event.target.value)) {
+      setTimeout(function () { el.fraktbolag.focus(); }, 0);
+      return;
+    }
+    var next = state.values.vara[index + 1];
+    if (next === undefined || oneLine(next)) {
+      state.values.vara.splice(index + 1, 0, '');
+    }
+    setTimeout(function () { renderItems(index + 1); }, 0);
+  });
+
+  el.addItem.addEventListener('click', function () {
+    if (state.locked || !state.note) return;
+    var items = state.values.vara;
+    // Återanvänd en tom sista rad i stället för att lägga till en till.
+    if (!items.length || oneLine(items[items.length - 1])) items.push('');
+    renderItems(items.length - 1);
   });
 
   dateFields.forEach(function (d) {
@@ -361,11 +445,44 @@
         input.readOnly = state.locked;
       }
     });
+    renderItems();
     renderDates();
     renderFilled();
     if (isNewNote) {
       var page = document.querySelector('.page');
       if (page) page.scrollTop = 0;
+    }
+  }
+
+  /** Ritar varuraderna. Raderna byggs bara om när antalet ändras, så att fokus och markör står kvar. */
+  function renderItems(focusIndex) {
+    var items = state.values.vara;
+    if (!items.length) items.push('');
+    var editable = Boolean(state.note) && !state.locked;
+
+    if (el.items.children.length !== items.length) {
+      el.items.textContent = '';
+      items.forEach(function () {
+        el.items.appendChild(el.itemTemplate.content.firstElementChild.cloneNode(true));
+      });
+    }
+
+    Array.prototype.forEach.call(el.items.children, function (row, i) {
+      var input = row.querySelector('.item-input');
+      if (input.value !== items[i]) input.value = items[i];
+      input.disabled = !state.note;
+      input.readOnly = state.locked;
+      input.setAttribute('aria-label', 'Vara ' + (i + 1));
+      // Den enda raden går inte att ta bort så länge den är tom.
+      row.querySelector('.item-remove').hidden = !editable || (items.length === 1 && !oneLine(items[0]));
+    });
+
+    var count = filledItems(state.values).length;
+    el.itemsLabel.textContent = count > 1 ? 'Varor (' + count + ')' : 'Varor';
+    el.addItem.hidden = !editable;
+
+    if (typeof focusIndex === 'number' && el.items.children[focusIndex]) {
+      el.items.children[focusIndex].querySelector('.item-input').focus();
     }
   }
 
@@ -403,7 +520,9 @@
   }
 
   function renderFilled() {
-    var count = FIELDS.filter(function (f) { return oneLine(state.values[f.key]); }).length;
+    var count = FIELDS.filter(function (f) {
+      return f.multi ? filledItems(state.values).length > 0 : oneLine(state.values[f.key]);
+    }).length;
     el.filled.textContent = count + ' av ' + FIELDS.length + ' ifyllda';
   }
 

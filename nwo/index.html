@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NWO (jagemyr)</title>
-  <link rel="stylesheet" href="nwo.css?v=1.1.1">
+  <link rel="stylesheet" href="nwo.css?v=1.2.0">
 </head>
 <body>
   <main class="page">
@@ -21,10 +21,14 @@
         <input type="text" data-key="foretag" autocomplete="off" autocapitalize="sentences" enterkeyhint="next" disabled>
       </label>
 
-      <label class="field">
-        <span>Vara</span>
-        <input type="text" data-key="vara" autocomplete="off" autocapitalize="sentences" enterkeyhint="next" disabled>
-      </label>
+      <div class="field">
+        <span id="items-label">Varor</span>
+        <ul class="items" id="items" aria-labelledby="items-label"></ul>
+        <button type="button" class="link-btn add-item" id="add-item" hidden>
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Lägg till vara
+        </button>
+      </div>
 
       <label class="field">
         <span>Fraktbolag</span>
@@ -80,7 +84,16 @@
     <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
   </footer>
 
-  <script src="vendor/component-relay.js?v=1.1.1"></script>
-  <script src="nwo.js?v=1.1.1"></script>
+  <template id="item-template">
+    <li class="item">
+      <input type="text" class="item-input" aria-label="Vara" autocomplete="off" autocapitalize="sentences" enterkeyhint="enter">
+      <button type="button" class="item-remove" aria-label="Ta bort vara">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </li>
+  </template>
+
+  <script src="vendor/component-relay.js?v=1.2.0"></script>
+  <script src="nwo.js?v=1.2.0"></script>
 </body>
 </html>

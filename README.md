@@ -52,22 +52,28 @@ Raden med 👥 skrivs bara när personerna har ändrats från standard. Rader so
 
 ## NWO
 
-En mall med sex fält: **Företag**, **Vara**, **Fraktbolag**, **Beställd**, **Skickad** och **Bedömt levdatum**.
+En mall med sex fält: **Företag**, **Varor**, **Fraktbolag**, **Beställd**, **Skickad** och **Bedömt levdatum**.
 
+- Varor är en lista: en beställning kan ha flera varor. **Lägg till vara** ger en ny rad, och Enter på en vara
+  med text gör samma sak. Enter på en tom rad går vidare till Fraktbolag. Krysset tar bort varan.
+  Tomma rader sparas inte.
 - Fraktbolag fylls i fritt, med förslag (PostNord, DHL, Budbee, Instabox med flera).
 - Datumen väljs i en datumväljare. Under varje datum står veckodag och hur långt det är dit eller sedan dess
   (t.ex. *Tisdag 3 november · om 7 dagar*).
 - Beställd och Skickad har en knapp **Idag** som fyller i dagens datum.
 - Ett passerat bedömt levdatum visas i rött.
 - Enter hoppar till nästa fält.
-- Anteckningslistan visar vara, företag, fraktbolag och det senaste ifyllda datumet
-  (bedömt levdatum, annars skickad, annars beställd), t.ex. *Skruvdragare · Exempelbolaget · PostNord · lev 3 nov*.
+- Anteckningslistan visar första varan (och hur många till), företag, fraktbolag och det senaste ifyllda datumet
+  (bedömt levdatum, annars skickad, annars beställd), t.ex. *Skruvdragare +2 · Exempelbolaget · PostNord · lev 3 nov*.
 
-Fälten sparas som vanlig text i anteckningen, en rad per fält, så de går att läsa även i andra editorer:
+Fälten sparas som vanlig text i anteckningen, en rad per fält och en `Vara:`-rad per vara, så de går att läsa
+även i andra editorer:
 
 ```
 Företag: Exempelbolaget
 Vara: Skruvdragare
+Vara: Bitsats
+Vara: Extra batteri
 Fraktbolag: PostNord
 Beställd: 2026-10-27
 Skickad: 2026-10-29
@@ -101,7 +107,7 @@ notes/
 ├── nwo/
 │   ├── ext.json
 │   ├── index.html
-│   ├── nwo.js             Textformat och gränssnitt
+│   ├── nwo.js             Textformat, varulista och gränssnitt
 │   ├── nwo.css
 │   └── vendor/
 └── test-editor/
