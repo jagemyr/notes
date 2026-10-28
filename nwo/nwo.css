@@ -10,7 +10,10 @@
   --accent: var(--sn-stylekit-info-color, #086dd6);
   --danger: var(--sn-stylekit-danger-color, #cc2128);
   --success: var(--sn-stylekit-success-color, #1f9d5c);
-  --warning: var(--sn-stylekit-warning-color, #c76b0f);
+  /* Lägesfärger: grå beställd, blå skickad, grön redo att hämtas. */
+  --state-ordered: var(--sn-stylekit-neutral-color, #8a8a93);
+  --state-shipped: var(--sn-stylekit-info-color, #086dd6);
+  --state-ready: var(--sn-stylekit-success-color, #1f9d5c);
   --bar-bg: var(--sn-stylekit-background-color, #f7f7f9);
   --field-bg: var(--sn-stylekit-contrast-background-color, #f2f2f5);
   --font: var(--sn-stylekit-sans-serif-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
@@ -126,10 +129,42 @@ button, input { font: inherit; color: inherit; }
 .s-bottom.soon { color: var(--accent); font-weight: 600; }
 .s-bottom.late { color: var(--danger); font-weight: 600; }
 .s-bottom.ok { color: var(--success); font-weight: 600; }
-.s-top.ready { color: var(--warning); }
+/* ---------- Lägesfärger ---------- */
 
-/* Redo att hämtas: en orange kant till vänster så att det syns i listan. */
-.order.ready { box-shadow: inset 3px 0 0 var(--warning); }
+/* En färgad kant till vänster och statustexten i samma färg. */
+.order.state-ordered { --state: var(--state-ordered); }
+.order.state-shipped { --state: var(--state-shipped); }
+.order.state-ready { --state: var(--state-ready); }
+
+.order.state-ordered,
+.order.state-shipped,
+.order.state-ready { box-shadow: inset 4px 0 0 var(--state); }
+
+.order.state-ordered .s-top,
+.order.state-shipped .s-top,
+.order.state-ready .s-top { color: var(--state); }
+
+/* Samma färg som en prick framför datumfälten, så att det syns vad färgerna betyder. */
+[data-date-field="bestalld"] > span,
+[data-date-field="skickad"] > span,
+[data-date-field="hamtas"] > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-date-field="bestalld"] > span::before,
+[data-date-field="skickad"] > span::before,
+[data-date-field="hamtas"] > span::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+[data-date-field="bestalld"] > span::before { background: var(--state-ordered); }
+[data-date-field="skickad"] > span::before { background: var(--state-shipped); }
+[data-date-field="hamtas"] > span::before { background: var(--state-ready); }
 
 .field input::placeholder { color: var(--muted); opacity: 0.7; }
 

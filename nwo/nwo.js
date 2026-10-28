@@ -24,7 +24,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '2.3.0';
+  var VERSION = '2.4.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var SETTLE_MS = 700;
@@ -137,6 +137,20 @@
   function isReady(order) {
     return !isDelivered(order) && Boolean(oneLine(order.values.hamtas));
   }
+
+  /**
+   * Läget som styr färgen i listan: grå beställd, blå skickad, grön redo att hämtas.
+   * Bedömt levdatum ändrar inte läget. Levererade har ingen färg (de ligger under Levererade).
+   */
+  function orderState(order) {
+    if (isDelivered(order)) return 'delivered';
+    if (isReady(order)) return 'ready';
+    if (oneLine(order.values.skickad)) return 'shipped';
+    if (oneLine(order.values.bestalld)) return 'ordered';
+    return '';
+  }
+
+  var STATE_CLASSES = ['state-ordered', 'state-shipped', 'state-ready'];
 
   function deliveredCount(order) {
     return filledItems(order).filter(function (item) { return item.done; }).length;
@@ -886,7 +900,8 @@
     var delivered = isDelivered(order);
     var total = filledItems(order).length;
     var doneItems = deliveredCount(order);
-    card.classList.toggle('ready', isReady(order));
+    var stateClass = 'state-' + orderState(order);
+    STATE_CLASSES.forEach(function (cls) { card.classList.toggle(cls, cls === stateClass); });
 
     var check = card.querySelector('.order-check');
     setFlag(check, 'checked', delivered);
@@ -928,7 +943,6 @@
     if (isReady(order)) {
       var since = parseIso(order.values.hamtas);
       top.textContent = 'Redo att hämtas';
-      top.classList.add('ready');
       bottom.textContent = since ? relative(daysFromToday(since)) : oneLine(order.values.hamtas);
       return;
     }

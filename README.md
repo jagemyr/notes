@@ -66,8 +66,11 @@ Håll koll på beställningar. En anteckning kan hålla flera beställningar fr�
 - Varor: **Lägg till vara** ger en ny rad, och Enter på en vara med text gör samma sak. Enter på en tom rad
   går vidare till Fraktbolag. Krysset tar bort varan. Tomma rader sparas inte.
 - **Redo att hämtas:** fyll i datumet (eller tryck **Idag**) när paketet har kommit till en box eller ett
-  utlämningsställe, och skriv var i **Hämtställe**. Raden får en orange kant och visar *Redo att hämtas*
+  utlämningsställe, och skriv var i **Hämtställe**. Raden visar *Redo att hämtas*
   och hur länge paketet har väntat. Bocka av beställningen när den är hämtad.
+- **Färger:** varje rad har en färgad kant till vänster och statustexten i samma färg efter hur långt
+  beställningen har kommit: grå när den är beställd, blå när den är skickad och grön när den är redo att hämtas.
+  Bedömt levdatum ändrar inte färgen. Samma färger står som en prick framför datumfälten.
 - **Levererad:** bocken framför en vara markerar den som levererad med dagens datum (varan stryks över).
   När alla varor är bockade är beställningen levererad. Bocken framför beställningen bockar av alla varor
   på en gång (eller av dem igen); är bara några varor levererade visar den ett streck och raden *1 av 2 levererade*.
