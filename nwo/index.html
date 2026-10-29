@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NWO (jagemyr)</title>
-  <link rel="stylesheet" href="nwo.css?v=2.5.0">
+  <link rel="stylesheet" href="nwo.css?v=2.6.0">
 </head>
 <body>
   <main class="page">
@@ -23,6 +23,17 @@
         Ny beställning
       </button>
     </div>
+
+    <section class="maybe-section" id="maybe-section" hidden>
+      <div class="section-head">
+        <h2 id="maybe-title">Kanske</h2>
+      </div>
+      <ul class="maybe-list" id="maybe-list" aria-labelledby="maybe-title"></ul>
+      <div class="maybe-add" id="maybe-add">
+        <input type="text" id="maybe-new" placeholder="Något du kanske ska beställa…" aria-label="Lägg till i Kanske" autocomplete="off" autocapitalize="sentences" enterkeyhint="enter">
+        <button type="button" class="link-btn" id="maybe-add-btn">Lägg till</button>
+      </div>
+    </section>
 
     <section class="done-section" id="done-section" hidden>
       <div class="section-head">
@@ -133,6 +144,16 @@
     </li>
   </template>
 
+  <template id="maybe-template">
+    <li class="maybe">
+      <input type="text" class="maybe-input" aria-label="Kanske" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+      <button type="button" class="link-btn maybe-order">Beställ</button>
+      <button type="button" class="item-remove maybe-remove" aria-label="Ta bort från Kanske">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </li>
+  </template>
+
   <template id="item-template">
     <li class="item">
       <input type="checkbox" class="check item-check" aria-label="Levererad">
@@ -143,7 +164,7 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=2.5.0"></script>
-  <script src="nwo.js?v=2.5.0"></script>
+  <script src="vendor/component-relay.js?v=2.6.0"></script>
+  <script src="nwo.js?v=2.6.0"></script>
 </body>
 </html>

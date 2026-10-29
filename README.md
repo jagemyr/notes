@@ -63,6 +63,9 @@ Håll koll på beställningar. En anteckning kan hålla flera beställningar fr�
 - Tryck på en beställning för att fälla ut den och ändra fälten. **Klar** fäller ihop den igen.
   En anteckning med bara en beställning visas utfälld direkt.
 - **Ny beställning** lägger till en beställning sist i listan.
+- **Kanske:** under beställningarna finns en lista för saker du kanske ska beställa. Skriv i fältet och tryck
+  Enter eller **Lägg till**; raderna går att ändra direkt och krysset tar bort. **Beställ** gör raden till en ny
+  beställning med saken som vara och dagens datum som Beställd, och fäller ut den så att du kan fylla i resten.
 - **Sortera:** dra i greppet (⋮⋮) längst till höger på raden för att flytta en beställning. Det fungerar med
   mus och med fingret, och sidan skrollar när man drar mot kanten. Med tangentbordet: fokus på greppet och
   pil upp eller ner. Beställningar flyttas inom sin lista (På väg eller Levererade), och ordningen sparas som
@@ -117,6 +120,13 @@ Bedömt levdatum: 2026-10-30
 Redo att hämtas:
 Hämtställe:
 Levererad: 2026-10-28
+```
+
+Kanske-listan sparas som ett eget block med en `Kanske:`-rad per sak, efter beställningarna:
+
+```
+Kanske: Vinterdäck
+Kanske: Ny lampa till hallen
 ```
 
 Skriver man `Levererad: datum` för hand i en annan editor räknas alla varor i beställningen som levererade.

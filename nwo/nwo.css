@@ -233,6 +233,57 @@ button, input { font: inherit; color: inherit; }
 /* En beställning som just blev levererad tonas ner innan den flyttas. */
 .order.completing { opacity: 0.55; transition: opacity 0.3s; }
 
+/* ---------- Kanske ---------- */
+
+.maybe-section { padding-bottom: 8px; }
+
+.maybe-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
+  display: grid;
+  gap: 6px;
+  max-width: 600px;
+}
+
+.maybe-list:empty { display: none; }
+
+.maybe {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Streckad kant: det är inte beställt än. */
+.maybe-input,
+.maybe-add input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: transparent;
+  outline: none;
+}
+
+.maybe-input:focus,
+.maybe-add input:focus { border-style: solid; border-color: var(--accent); }
+.maybe-input[readonly] { cursor: default; }
+
+.maybe-add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 600px;
+  padding: 8px max(var(--gutter), env(safe-area-inset-right)) 8px max(var(--gutter), env(safe-area-inset-left));
+}
+
+.maybe-add input { background: var(--field-bg); border-style: solid; }
+.maybe-add input::placeholder { color: var(--muted); opacity: 0.8; }
+
+.maybe-order { font-weight: 600; }
+
 /* ---------- Levererade ---------- */
 
 .done-section { padding-bottom: 24px; }

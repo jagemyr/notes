@@ -24,7 +24,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '2.5.0';
+  var VERSION = '2.6.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var SETTLE_MS = 700;
@@ -63,8 +63,19 @@
     { key: 'bestalld', label: 'Beställd', preview: 'beställd' }
   ];
 
+  // Kanske: saker man kanske ska beställa, en rad per sak ("Kanske: Vinterdäck").
+  var MAYBE_LABEL = 'Kanske';
+  var MAYBE_ALIASES = ['kanske', 'att beställa', 'önskelista', 'önskas', 'vill ha'];
+
   var el = {
     page: document.querySelector('.page'),
+    maybeSection: document.getElementById('maybe-section'),
+    maybeTitle: document.getElementById('maybe-title'),
+    maybeList: document.getElementById('maybe-list'),
+    maybeAddRow: document.getElementById('maybe-add'),
+    maybeNew: document.getElementById('maybe-new'),
+    maybeAddBtn: document.getElementById('maybe-add-btn'),
+    maybeTemplate: document.getElementById('maybe-template'),
     notice: document.getElementById('notice'),
     lockedBanner: document.getElementById('locked-banner'),
     orders: document.getElementById('orders'),
@@ -84,6 +95,8 @@
     note: null,
     locked: false,
     orders: [],
+    // Kanske-listan: text per rad (tomma rader sparas inte).
+    maybe: [],
     rest: '',
     expanded: -1,
     confirmIndex: -1,
@@ -228,8 +241,13 @@
     return { text: value.slice(0, m.index).trim(), done: m[1] || DONE_NO_DATE };
   }
 
+  function isMaybeLabel(label) {
+    return MAYBE_ALIASES.indexOf(label.trim().toLowerCase()) !== -1;
+  }
+
   function parse(text) {
     var orders = [];
+    var maybe = [];
     var restBlocks = [];
     var blocks = String(text || '').replace(/\r\n?/g, '\n').split(/\n[ \t]*\n/);
 
@@ -240,6 +258,12 @@
 
       block.split('\n').forEach(function (line) {
         var m = FIELD_LINE.exec(line);
+        // Kanske-rader hör inte till någon beställning, var de än står.
+        if (m && isMaybeLabel(m[1])) {
+          var wish = m[2].trim();
+          if (wish) maybe.push(wish);
+          return;
+        }
         var field = m && fieldByLabel(m[1]);
         if (!field) {
           if (!line.trim()) return;
@@ -267,7 +291,7 @@
     });
 
     orders.forEach(normalize);
-    return { orders: orders, rest: restBlocks.join('\n\n') };
+    return { orders: orders, maybe: maybe, rest: restBlocks.join('\n\n') };
   }
 
   function serializeItem(item) {
@@ -276,10 +300,11 @@
     return text + ' ✅' + (item.done !== DONE_NO_DATE ? ' ' + oneLine(item.done) : '');
   }
 
-  function serialize(orders, rest) {
+  function serialize(orders, rest, maybe) {
     var filled = orders.filter(hasContent);
-    // En tom mall sparas så att fälten syns även i andra editorer.
-    if (!filled.length) filled = [emptyOrder()];
+    var wishes = filledMaybe(maybe);
+    // En tom mall sparas så att fälten syns även i andra editorer (inte om det bara finns Kanske).
+    if (!filled.length && !wishes.length) filled = [emptyOrder()];
     var blocks = filled.map(function (order) {
       var lines = [];
       FIELDS.forEach(function (f) {
@@ -289,8 +314,16 @@
       });
       return lines.concat(order.extra).join('\n');
     });
+    if (wishes.length) {
+      blocks.push(wishes.map(function (w) { return MAYBE_LABEL + ': ' + w; }).join('\n'));
+    }
     if (rest) blocks.push(rest);
     return blocks.join('\n\n');
+  }
+
+  /** Raderna i Kanske som har text. */
+  function filledMaybe(maybe) {
+    return (maybe || state.maybe).map(oneLine).filter(Boolean);
   }
 
   function oneLine(value) {
@@ -301,8 +334,18 @@
    * Förhandsvisningen i anteckningslistan.
    * En beställning: "Skruvdragare +1 · Webbutiken · PostNord · lev 3 nov".
    * Flera: "1 att hämta, 1 på väg, 1 levererad: Skruvdragare +1 (att hämta), Vinterjacka (lev 3 nov)".
+   * Kanske läggs till sist ("· 3 kanske"), eller visas ensam ("Kanske: Vinterdäck, Lampa").
    */
   function preview(orders) {
+    var wishes = filledMaybe();
+    var base = previewOrders(orders);
+    if (!wishes.length) return truncate(base);
+    if (!base) return truncate(MAYBE_LABEL + ': ' + wishes.join(', '));
+    var suffix = ' · ' + wishes.length + ' kanske';
+    return truncate(base, PREVIEW_LENGTH - suffix.length) + suffix;
+  }
+
+  function previewOrders(orders) {
     var filled = orders.filter(hasContent);
     if (!filled.length) return '';
     if (filled.length === 1) {
@@ -311,17 +354,17 @@
       var parts = [itemText, o.values.foretag, o.values.fraktbolag].map(oneLine).filter(Boolean);
       var s = stepText(o);
       if (s) parts.push(s);
-      return truncate(parts.join(' · '));
+      return parts.join(' · ');
     }
     var active = filled.filter(function (order) { return !isDelivered(order); });
-    if (!active.length) return truncate('Alla ' + filled.length + ' levererade');
+    if (!active.length) return 'Alla ' + filled.length + ' levererade';
     // Det som kan hämtas står först.
     active.sort(function (a, b) { return Number(isReady(b)) - Number(isReady(a)); });
-    return truncate(countText(filled, ', ') + ': ' + active.map(function (order) {
+    return countText(filled, ', ') + ': ' + active.map(function (order) {
       var title = shortTitle(order) || 'Beställning';
       var s = stepText(order);
       return s ? title + ' (' + s + ')' : title;
-    }).join(', '));
+    }).join(', ');
   }
 
   /** "1 att hämta, 2 på väg, 1 levererad" – bara de delar som finns. */
@@ -350,8 +393,9 @@
     return latest.step.preview + ' ' + (latest.date ? shortDate(latest.date) : latest.value);
   }
 
-  function truncate(text) {
-    return text.length > PREVIEW_LENGTH ? text.slice(0, PREVIEW_LENGTH - 1).trim() + '…' : text;
+  function truncate(text, max) {
+    max = max || PREVIEW_LENGTH;
+    return text.length > max ? text.slice(0, max - 1).trim() + '…' : text;
   }
 
   // ---------- Datum ----------
@@ -484,14 +528,15 @@
     if (!note.isMetadataUpdate || isNewNote) {
       var incoming = (note.content && note.content.text) || '';
       // Vår egen sparning som kommer tillbaka ska inte skriva över det man håller på att skriva.
-      var isEcho = !isNewNote && (state.sentTexts.indexOf(incoming) !== -1 || incoming === serialize(state.orders, state.rest));
+      var isEcho = !isNewNote && (state.sentTexts.indexOf(incoming) !== -1 || incoming === serialize(state.orders, state.rest, state.maybe));
       if (!isEcho) {
         // Ändring utifrån mitt i ett drag: släpp draget, listan ritas om nedan.
         cancelDrag();
         var parsed = parse(incoming);
         state.orders = parsed.orders;
+        state.maybe = parsed.maybe;
         state.rest = parsed.rest;
-        if (!state.orders.length) state.orders.push(emptyOrder());
+        ensureOrder();
         stopSettling();
         // En ensam beställning visas utfälld; flera visas som en lista.
         if (isNewNote || state.expanded >= state.orders.length) {
@@ -518,12 +563,19 @@
     return Boolean(state.note) && !state.locked;
   }
 
+  /** Utan beställningar och utan något i Kanske visas en tom beställning att fylla i. */
+  function ensureOrder() {
+    if (state.orders.length || filledMaybe().length) return;
+    state.orders.push(emptyOrder());
+    state.expanded = 0;
+  }
+
   // ---------- Till Standard Notes ----------
 
   function save() {
     if (!editable()) return;
     var note = state.note;
-    var text = serialize(state.orders, state.rest);
+    var text = serialize(state.orders, state.rest, state.maybe);
     var previewText = preview(state.orders);
     setSaveState('Sparar…', '');
     relay.saveItemWithPresave(note, function () {
@@ -725,13 +777,91 @@
     stopSettling();
     state.orders = state.orders.filter(function (order) { return !(hasContent(order) && isDelivered(order)); });
     state.expanded = -1;
-    if (!state.orders.length) {
-      state.orders.push(emptyOrder());
-      state.expanded = 0;
-    }
+    ensureOrder();
     render();
     save();
   });
+
+  // ---------- Kanske ----------
+
+  function maybeIndex(target) {
+    var row = target.closest('.maybe');
+    return row ? Array.prototype.indexOf.call(el.maybeList.children, row) : -1;
+  }
+
+  function addMaybe() {
+    if (!editable()) return;
+    var text = oneLine(el.maybeNew.value);
+    if (!text) return;
+    state.maybe.push(text);
+    el.maybeNew.value = '';
+    render();
+    save();
+    el.maybeNew.focus();
+  }
+
+  el.maybeAddBtn.addEventListener('click', addMaybe);
+
+  el.maybeNew.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    addMaybe();
+  });
+
+  el.maybeList.addEventListener('input', function (event) {
+    if (!event.target.classList.contains('maybe-input') || !editable()) return;
+    var i = maybeIndex(event.target);
+    if (i < 0 || state.maybe[i] === event.target.value) return;
+    state.maybe[i] = event.target.value;
+    renderMaybeControls(editable());
+    renderCount();
+    save();
+  });
+
+  // Enter i en befintlig rad hoppar ner till raden för nya saker.
+  el.maybeList.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter' || !event.target.classList.contains('maybe-input')) return;
+    event.preventDefault();
+    el.maybeNew.focus();
+  });
+
+  el.maybeList.addEventListener('click', function (event) {
+    if (!editable()) return;
+    var i = maybeIndex(event.target);
+    if (i < 0) return;
+    if (event.target.closest('.maybe-order')) {
+      orderMaybe(i);
+    } else if (event.target.closest('.maybe-remove')) {
+      state.maybe.splice(i, 1);
+      ensureOrder();
+      render();
+      save();
+    }
+  });
+
+  /** Beställ: raden blir en ny beställning med varan och dagens datum som Beställd. */
+  function orderMaybe(i) {
+    var text = oneLine(state.maybe[i]);
+    if (!text) return;
+    state.maybe.splice(i, 1);
+    // Återanvänd en tom beställning om det finns en.
+    var index = -1;
+    state.orders.forEach(function (order, k) { if (!hasContent(order)) index = k; });
+    if (index < 0) {
+      state.orders.push(emptyOrder());
+      index = state.orders.length - 1;
+    }
+    var order = state.orders[index];
+    order.values.vara = [{ text: text, done: '' }];
+    order.values.bestalld = todayIso();
+    state.expanded = index;
+    resetConfirm();
+    render();
+    save();
+    var card = cardFor(index);
+    scrollIntoView(card);
+    card.querySelector('[data-key="foretag"]').focus();
+  }
 
   // ---------- Sortering: dra i greppet, eller pil upp och ner när greppet har fokus ----------
   //
@@ -962,10 +1092,7 @@
     state.orders.splice(index, 1);
     if (state.expanded === index) state.expanded = -1;
     else if (state.expanded > index) state.expanded--;
-    if (!state.orders.length) {
-      state.orders.push(emptyOrder());
-      state.expanded = 0;
-    }
+    ensureOrder();
     render();
     save();
   }
@@ -1006,7 +1133,40 @@
     el.clearDone.classList.toggle('confirm', state.confirmClear);
 
     el.addOrder.hidden = !canEdit;
+    renderMaybe(canEdit);
     renderCount();
+  }
+
+  /** Kanske-listan. Raderna byggs bara om när antalet ändras, så att fokus och markör står kvar. */
+  function renderMaybe(canEdit) {
+    var list = el.maybeList;
+    if (list.children.length !== state.maybe.length) {
+      list.textContent = '';
+      state.maybe.forEach(function () {
+        list.appendChild(el.maybeTemplate.content.firstElementChild.cloneNode(true));
+      });
+    }
+    Array.prototype.forEach.call(list.children, function (row, i) {
+      var input = row.querySelector('.maybe-input');
+      if (input.value !== state.maybe[i]) input.value = state.maybe[i];
+      setFlag(input, 'disabled', !state.note);
+      setFlag(input, 'readOnly', state.locked);
+    });
+    renderMaybeControls(canEdit);
+    // Utan något i listan visas Kanske bara när man kan lägga till.
+    el.maybeSection.hidden = !state.note || (!canEdit && !filledMaybe().length);
+    el.maybeAddRow.hidden = !canEdit;
+  }
+
+  /** Knapparna och antalet i rubriken (ändras när man skriver, utan att raderna byggs om). */
+  function renderMaybeControls(canEdit) {
+    Array.prototype.forEach.call(el.maybeList.children, function (row, i) {
+      var hasText = Boolean(oneLine(state.maybe[i]));
+      row.querySelector('.maybe-order').hidden = !canEdit || !hasText;
+      row.querySelector('.maybe-remove').hidden = !canEdit;
+    });
+    var count = filledMaybe().length;
+    el.maybeTitle.textContent = count ? MAYBE_LABEL + ' (' + count + ')' : MAYBE_LABEL;
   }
 
   /** Korten byggs bara om när listans sammansättning ändras, så att fokus och markör står kvar. */
@@ -1035,13 +1195,19 @@
     var filled = state.orders.filter(hasContent);
     var doneCount = filled.filter(isDelivered).length;
     var readyCount = filled.filter(isReady).length;
-    if (!doneCount && !readyCount) {
-      el.count.textContent = filled.length === 1 ? '1 beställning' : filled.length + ' beställningar';
+    var maybeCount = filledMaybe().length;
+    var text;
+    if (!filled.length && maybeCount) {
+      text = '';
+    } else if (!doneCount && !readyCount) {
+      text = filled.length === 1 ? '1 beställning' : filled.length + ' beställningar';
     } else if (doneCount === filled.length) {
-      el.count.textContent = doneCount === 1 ? '1 levererad' : 'Alla ' + doneCount + ' levererade';
+      text = doneCount === 1 ? '1 levererad' : 'Alla ' + doneCount + ' levererade';
     } else {
-      el.count.textContent = countText(filled, ' · ');
+      text = countText(filled, ' · ');
     }
+    if (maybeCount) text = (text ? text + ' · ' : '') + maybeCount + ' kanske';
+    el.count.textContent = text;
   }
 
   function renderCard(card, order, index, canEdit) {
