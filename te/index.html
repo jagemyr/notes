@@ -4,12 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Te (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=1.2.0">
+  <link rel="stylesheet" href="te.css?v=1.3.0">
 </head>
 <body>
-  <nav class="filters" id="filters-bar" aria-label="Visa teer" hidden>
-    <div class="chip-row" id="filters"></div>
-    <button type="button" class="chip chip-toggle" id="gongfu-filter" aria-pressed="false">Gong fu</button>
+  <nav class="filters" id="filters-bar" aria-label="Sök och filtrera teer" hidden>
+    <div class="search">
+      <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" id="search" placeholder="Sök namn, land, smak…" aria-label="Sök te" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search">
+      <button type="button" class="search-clear" id="search-clear" aria-label="Rensa sökningen" hidden>
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="filter-row">
+      <div class="chip-row" id="filters"></div>
+      <button type="button" class="chip chip-toggle" id="gongfu-filter" aria-pressed="false">Gong fu</button>
+    </div>
   </nav>
 
   <main class="page">
@@ -131,7 +140,7 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=1.2.0"></script>
-  <script src="te.js?v=1.2.0"></script>
+  <script src="vendor/component-relay.js?v=1.3.0"></script>
+  <script src="te.js?v=1.3.0"></script>
 </body>
 </html>

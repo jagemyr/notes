@@ -45,14 +45,68 @@ button, input { font: inherit; color: inherit; }
   padding-bottom: 8px;
 }
 
-/* ---------- Filter ---------- */
+/* ---------- Sök och filter ---------- */
 
 .filters {
-  display: flex;
-  gap: 6px;
+  display: grid;
+  gap: 8px;
   padding: 10px max(var(--gutter), env(safe-area-inset-right)) 10px max(var(--gutter), env(safe-area-inset-left));
   border-bottom: 1px solid var(--border);
 }
+
+.filter-row {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 40px 0 36px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--field-bg);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search input:focus { border-color: var(--accent); }
+.search input::placeholder { color: var(--muted); opacity: 0.8; }
+
+/* Webbläsarens egen rensa-knapp döljs; vi har en egen som ser likadan ut överallt. */
+.search input::-webkit-search-cancel-button,
+.search input::-webkit-search-decoration { -webkit-appearance: none; display: none; }
+
+.search-clear {
+  position: absolute;
+  right: 2px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.search-clear:hover { color: var(--fg); }
 
 /* Sortknapparna skrollar i sidled om de inte får plats; Gong fu står still till höger. */
 .chip-row {

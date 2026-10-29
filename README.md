@@ -154,7 +154,11 @@ bock för om det **passar för gong fu**.
 - **Gong fu:** när bocken är ibockad visas ett bryggschema under den: first rinse (som hälls bort),
   infusion 1–5 och +10 sekunder för varje infusion efter den femte. Schemat är detsamma för alla teer och
   sparas inte i anteckningen.
-- **Filter:** knapparna överst visar alla teer eller en sort i taget, och **Gong fu** visar bara teer som passar
+- **Sök:** fältet överst söker i namn, sort, land och smak. Alla ord man skriver måste finnas i teet, så
+  *honung taiwan* hittar taiwanesiska teer som smakar honung. Stora och små bokstäver, accenter och
+  bindestreck spelar ingen roll (*rokig* hittar *rökig*, *puerh* hittar *Pu-erh*). Sökningen går att
+  kombinera med filtren, rensas med krysset eller Escape och sparas inte.
+- **Filter:** knapparna under sökfältet visar alla teer eller en sort i taget, och **Gong fu** visar bara teer som passar
   för gong fu (går att kombinera med en sort). Filtret sparas per enhet. Med ett filter valt får ett nytt te
   den sorten (och gong fu).
 - Enter hoppar till nästa fält i samma te.

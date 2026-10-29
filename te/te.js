@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.2.0';
+  var VERSION = '1.3.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -81,6 +81,8 @@
     filtersBar: document.getElementById('filters-bar'),
     filters: document.getElementById('filters'),
     gongfuFilter: document.getElementById('gongfu-filter'),
+    search: document.getElementById('search'),
+    searchClear: document.getElementById('search-clear'),
     groups: document.getElementById('groups'),
     empty: document.getElementById('empty'),
     addTea: document.getElementById('add-tea'),
@@ -104,6 +106,8 @@
     confirmTimer: null,
     filter: loadPref(FILTER_KEY) || null,
     gongfuOnly: loadPref(GONGFU_KEY) === '1',
+    // Sökningen sparas inte; den gäller tills man rensar den eller byter anteckning.
+    search: '',
     lastSentText: null,
     // De senaste texterna vi själva har sparat. En sparning kan komma tillbaka från appen
     // efter att man har skrivit vidare, och ska då inte skriva över fälten.
@@ -388,6 +392,7 @@
       state.lastSentText = null;
       state.sentTexts = [];
       resetConfirm();
+      setSearch('');
       setSaveState('', '');
     }
 
@@ -602,6 +607,75 @@
     el.page.scrollTop = 0;
   });
 
+  /** Ett te syns om det passar sortfiltret, gong fu-filtret och sökningen. */
+  function passesFilters(tea) {
+    if (state.filter && groupFor(tea.values.sort).key !== state.filter) return false;
+    if (state.gongfuOnly && !tea.values.gongfu) return false;
+    return matchesSearch(tea);
+  }
+
+  // ---------- Sök ----------
+  //
+  // Söker i namn, sort, land och smak. Alla ord man skriver måste finnas någonstans i teet,
+  // så "honung taiwan" hittar de taiwanesiska teerna som smakar honung. Stora och små
+  // bokstäver, accenter och bindestreck spelar ingen roll ("rokig" hittar "rökig",
+  // "puerh" hittar "Pu-erh").
+
+  function foldText(text) {
+    var lower = String(text || '').toLowerCase();
+    try { lower = lower.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch (e) { /* äldre webbläsare */ }
+    return lower.replace(/[-'’´`]/g, '');
+  }
+
+  function searchTerms() {
+    return foldText(state.search).split(/[\s,]+/).filter(Boolean);
+  }
+
+  function matchesSearch(tea) {
+    var terms = searchTerms();
+    if (!terms.length) return true;
+    var v = tea.values;
+    var hay = foldText([v.namn, v.sort, groupFor(v.sort).label, v.land, v.smak].join(' '));
+    return terms.every(function (term) { return hay.indexOf(term) !== -1; });
+  }
+
+  function setSearch(value) {
+    state.search = value;
+    if (el.search.value !== value) el.search.value = value;
+    el.searchClear.hidden = !value;
+  }
+
+  el.search.addEventListener('input', function () {
+    setSearch(el.search.value);
+    collapse();
+    resetConfirm();
+    render();
+    el.page.scrollTop = 0;
+  });
+
+  el.search.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && state.search) {
+      event.preventDefault();
+      clearSearch();
+    } else if (event.key === 'Enter') {
+      // Stänger tangentbordet i mobilen; resultatet syns redan.
+      event.preventDefault();
+      el.search.blur();
+    }
+  });
+
+  el.searchClear.addEventListener('click', function () {
+    clearSearch();
+    el.search.focus();
+  });
+
+  function clearSearch() {
+    setSearch('');
+    collapse();
+    resetConfirm();
+    render();
+  }
+
   // ---------- Fälla ut och ihop ----------
 
   function expand(index) {
@@ -690,10 +764,7 @@
       if (!isExpanded && !hasContent(tea)) return;
       var values = isExpanded && state.frozen ? state.frozen : tea.values;
       var g = groupFor(values.sort);
-      if (!isExpanded) {
-        if (state.filter && g.key !== state.filter) return;
-        if (state.gongfuOnly && !tea.values.gongfu) return;
-      }
+      if (!isExpanded && !passesFilters(tea)) return;
       if (!byKey[g.key]) {
         g.entries = [];
         byKey[g.key] = g;
@@ -763,6 +834,8 @@
     if (!groups.length && state.note) {
       if (!filled.length) {
         text = 'Inga teer ännu.';
+      } else if (state.search.trim()) {
+        text = 'Inga teer matchar ”' + state.search.trim() + '”' + (state.filter || state.gongfuOnly ? ' med filtret som är valt.' : '.');
       } else {
         var label = state.filter ? groupsOf(filled).filter(function (g) { return g.key === state.filter; })[0] : null;
         var sortText = label ? label.label.toLowerCase() : '';
@@ -780,7 +853,7 @@
     var filled = state.teas.filter(hasContent);
     var groups = groupsOf(filled);
     var anyGongfu = filled.some(function (tea) { return tea.values.gongfu; });
-    var show = filled.length >= 2 || Boolean(state.filter) || state.gongfuOnly;
+    var show = filled.length >= 2 || Boolean(state.filter) || state.gongfuOnly || Boolean(state.search);
     el.filtersBar.hidden = !show;
     if (!show) return;
 
@@ -823,11 +896,8 @@
   function renderCount() {
     var filled = state.teas.filter(hasContent);
     var text = teaCount(filled.length);
-    if (state.filter || state.gongfuOnly) {
-      var shown = filled.filter(function (tea) {
-        return (!state.filter || groupFor(tea.values.sort).key === state.filter) && (!state.gongfuOnly || tea.values.gongfu);
-      }).length;
-      text = shown + ' av ' + text;
+    if (state.filter || state.gongfuOnly || searchTerms().length) {
+      text = filled.filter(passesFilters).length + ' av ' + text;
     } else {
       var gongfu = filled.filter(function (tea) { return tea.values.gongfu; }).length;
       if (gongfu) text += ' · ' + gongfu + ' för gong fu';
