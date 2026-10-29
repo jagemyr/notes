@@ -62,6 +62,11 @@ Håll koll på beställningar. En anteckning kan hålla flera beställningar fr�
 - Tryck på en beställning för att fälla ut den och ändra fälten. **Klar** fäller ihop den igen.
   En anteckning med bara en beställning visas utfälld direkt.
 - **Ny beställning** lägger till en beställning sist i listan.
+- **Sortera:** dra i greppet (⋮⋮) längst till höger på raden för att flytta en beställning. Det fungerar med
+  mus och med fingret, och sidan skrollar när man drar mot kanten. Med tangentbordet: fokus på greppet och
+  pil upp eller ner. Beställningar flyttas inom sin lista (På väg eller Levererade), och ordningen sparas som
+  ordningen i anteckningens text. Greppet är egna pekarhändelser och inte HTML5 drag-and-drop, som inte
+  fungerar med fingret i iOS.
 - **Ta bort beställning** frågar en gång till (*Tryck igen för att ta bort*). En tom beställning tas bort direkt.
 - Varor: **Lägg till vara** ger en ny rad, och Enter på en vara med text gör samma sak. Enter på en tom rad
   går vidare till Fraktbolag. Krysset tar bort varan. Tomma rader sparas inte.

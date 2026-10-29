@@ -24,7 +24,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '2.4.0';
+  var VERSION = '2.5.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var SETTLE_MS = 700;
@@ -91,6 +91,8 @@
     confirmTimer: null,
     // En beställning som just blev levererad står kvar en stund innan den flyttas ner.
     settlingIndex: -1,
+    // Pågående drag (se Sortering nedan) eller null.
+    drag: null,
     settleTimer: null,
     lastSentText: null,
     // De senaste texterna vi själva har sparat. En sparning kan komma tillbaka från appen
@@ -484,6 +486,8 @@
       // Vår egen sparning som kommer tillbaka ska inte skriva över det man håller på att skriva.
       var isEcho = !isNewNote && (state.sentTexts.indexOf(incoming) !== -1 || incoming === serialize(state.orders, state.rest));
       if (!isEcho) {
+        // Ändring utifrån mitt i ett drag: släpp draget, listan ritas om nedan.
+        cancelDrag();
         var parsed = parse(incoming);
         state.orders = parsed.orders;
         state.rest = parsed.rest;
@@ -729,9 +733,192 @@
     save();
   });
 
+  // ---------- Sortering: dra i greppet, eller pil upp och ner när greppet har fokus ----------
+  //
+  // Pointer events i stället för HTML5 drag-and-drop, som inte fungerar med fingret i iOS.
+  // Korten flyttas bara inom sin egen lista (På väg eller Levererade). Ordningen är
+  // ordningen i anteckningens text och sparas som vanligt.
+
+  var DRAG_THRESHOLD = 4;
+  var AUTOSCROLL_EDGE = 60;
+  var AUTOSCROLL_SPEED = 16;
+
+  el.page.addEventListener('pointerdown', function (event) {
+    var handle = event.target.closest('.drag-handle');
+    // Inte medan en nyss levererad beställning är på väg ner (listan ritas om strax).
+    if (!handle || state.drag || state.settlingIndex >= 0 || !editable()) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    var card = handle.closest('.order');
+    var list = card.parentNode;
+    var cards = Array.prototype.slice.call(list.children);
+    if (cards.length < 2) return;
+    event.preventDefault();
+
+    var scroll = el.page.scrollTop;
+    var gap = parseFloat(getComputedStyle(list).rowGap) || 0;
+    var from = cards.indexOf(card);
+    state.drag = {
+      pointerId: event.pointerId,
+      handle: handle,
+      card: card,
+      cards: cards,
+      from: from,
+      to: from,
+      startY: event.clientY,
+      lastY: event.clientY,
+      startScroll: scroll,
+      moved: false,
+      // Lägena räknas i sidans innehåll (inte i fönstret), så att autoskroll inte rubbar dem.
+      slots: cards.map(function (c) {
+        var r = c.getBoundingClientRect();
+        return { top: r.top + scroll, height: r.height };
+      }),
+      // Så långt de andra korten flyttar sig för att ge plats.
+      step: card.getBoundingClientRect().height + gap,
+      raf: 0
+    };
+    try { handle.setPointerCapture(event.pointerId); } catch (e) { /* äldre webbläsare */ }
+    resetConfirm();
+    document.body.classList.add('is-dragging');
+    card.classList.add('dragging');
+    state.drag.raf = requestAnimationFrame(autoScroll);
+  });
+
+  document.addEventListener('pointermove', function (event) {
+    var d = state.drag;
+    if (!d || event.pointerId !== d.pointerId) return;
+    event.preventDefault();
+    d.lastY = event.clientY;
+    if (Math.abs(d.lastY - d.startY) > DRAG_THRESHOLD) d.moved = true;
+    layoutDrag();
+  });
+
+  document.addEventListener('pointerup', function (event) { finishDrag(event, false); });
+  document.addEventListener('pointercancel', function (event) { finishDrag(event, true); });
+
+  /** Flyttar kortet efter pekaren och låter de andra glida undan. */
+  function layoutDrag() {
+    var d = state.drag;
+    var slots = d.slots;
+    var first = slots[0];
+    var last = slots[slots.length - 1];
+    var own = slots[d.from];
+    var dy = d.lastY - d.startY + (el.page.scrollTop - d.startScroll);
+    // Inte längre upp än första platsen eller längre ner än sista.
+    dy = Math.max(first.top - own.top, Math.min(last.top + last.height - own.top - own.height, dy));
+
+    // Nedåt byter kortet plats när underkanten passerar mitten på nästa kort, uppåt när
+    // överkanten gör det. Då fungerar det även med ett högt, utfällt kort.
+    var top = own.top + dy;
+    var bottom = top + own.height;
+    var to = d.from;
+    slots.forEach(function (s, i) {
+      var mid = s.top + s.height / 2;
+      if (i > d.from && bottom > mid) to = i;
+      if (i < d.from && top < mid && to >= d.from) to = i;
+    });
+    d.to = to;
+
+    d.card.style.transform = 'translateY(' + dy + 'px)';
+    d.cards.forEach(function (c, i) {
+      if (i === d.from) return;
+      var shift = 0;
+      if (i > d.from && i <= to) shift = -d.step;
+      if (i < d.from && i >= to) shift = d.step;
+      c.style.transform = shift ? 'translateY(' + shift + 'px)' : '';
+    });
+  }
+
+  /** Skrollar sidan när man drar nära över- eller underkanten. */
+  function autoScroll() {
+    var d = state.drag;
+    if (!d) return;
+    if (d.moved) {
+      var rect = el.page.getBoundingClientRect();
+      var speed = 0;
+      if (d.lastY < rect.top + AUTOSCROLL_EDGE) {
+        speed = -AUTOSCROLL_SPEED * Math.min(1, (rect.top + AUTOSCROLL_EDGE - d.lastY) / AUTOSCROLL_EDGE);
+      } else if (d.lastY > rect.bottom - AUTOSCROLL_EDGE) {
+        speed = AUTOSCROLL_SPEED * Math.min(1, (d.lastY - rect.bottom + AUTOSCROLL_EDGE) / AUTOSCROLL_EDGE);
+      }
+      if (speed) {
+        var before = el.page.scrollTop;
+        el.page.scrollTop = before + speed;
+        if (el.page.scrollTop !== before) layoutDrag();
+      }
+    }
+    d.raf = requestAnimationFrame(autoScroll);
+  }
+
+  function finishDrag(event, cancelled) {
+    var d = state.drag;
+    if (!d || (event && event.pointerId !== d.pointerId)) return;
+    state.drag = null;
+    cancelAnimationFrame(d.raf);
+    try { d.handle.releasePointerCapture(d.pointerId); } catch (e) { /* redan släppt */ }
+    document.body.classList.remove('is-dragging');
+    d.card.classList.remove('dragging');
+    d.cards.forEach(function (c) { c.style.transform = ''; });
+    if (cancelled || d.to === d.from) return;
+    var indices = d.cards.map(function (c) { return Number(c.getAttribute('data-index')); });
+    moveWithin(indices, d.from, d.to);
+  }
+
+  /** Avbryter ett pågående drag utan att flytta något (t.ex. när anteckningen ändras utifrån). */
+  function cancelDrag() {
+    if (state.drag) finishDrag(null, true);
+  }
+
+  // Tangentbord: pil upp och ner flyttar beställningen ett steg när greppet har fokus.
+  el.page.addEventListener('keydown', function (event) {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    var handle = event.target.closest && event.target.closest('.drag-handle');
+    if (!handle || state.drag || !editable()) return;
+    event.preventDefault();
+    var card = handle.closest('.order');
+    var list = card.parentNode;
+    var cards = Array.prototype.slice.call(list.children);
+    var from = cards.indexOf(card);
+    var to = from + (event.key === 'ArrowUp' ? -1 : 1);
+    if (to < 0 || to >= cards.length) return;
+    var indices = cards.map(function (c) { return Number(c.getAttribute('data-index')); });
+    var newIndex = moveWithin(indices, from, to);
+    var moved = list.querySelector('.order[data-index="' + newIndex + '"] .drag-handle');
+    if (moved) moved.focus();
+  });
+
+  /**
+   * Flyttar kortet på plats `from` till plats `to` i en lista. `indices` är listans
+   * beställningar (index i state.orders, i visningsordning). Beställningarna i den andra
+   * listan står kvar där de är. Returnerar den flyttade beställningens nya index.
+   */
+  function moveWithin(indices, from, to) {
+    var sequence = indices.slice();
+    var moved = sequence.splice(from, 1)[0];
+    sequence.splice(to, 0, moved);
+    var slots = indices.slice().sort(function (a, b) { return a - b; });
+    var old = state.orders.slice();
+    var newIndexOf = {};
+    slots.forEach(function (slot, k) {
+      state.orders[slot] = old[sequence[k]];
+      newIndexOf[sequence[k]] = slot;
+    });
+    if (Object.prototype.hasOwnProperty.call(newIndexOf, state.expanded)) {
+      state.expanded = newIndexOf[state.expanded];
+    }
+    resetConfirm();
+    stopSettling();
+    // Bygg om korten så att varje kort hör ihop med rätt beställning.
+    el.orders.removeAttribute('data-signature');
+    el.doneList.removeAttribute('data-signature');
+    render();
+    save();
+    return newIndexOf[moved];
+  }
+
   // Uppdatera "om N dagar" när man kommer tillbaka till appen en annan dag.
   document.addEventListener('visibilitychange', function () {
-    if (!document.hidden) render();
+    if (!document.hidden && !state.drag) render();
   });
 
   function toggle(index) {
@@ -834,9 +1021,13 @@
         list.appendChild(card);
       });
     }
+    // Greppet syns bara när det finns något att sortera.
+    var sortable = canEdit && list.children.length > 1;
     Array.prototype.forEach.call(list.children, function (card) {
       var i = Number(card.getAttribute('data-index'));
       renderCard(card, state.orders[i], i, canEdit);
+      card.classList.toggle('sortable', sortable);
+      card.querySelector('.drag-handle').hidden = !sortable;
     });
   }
 
