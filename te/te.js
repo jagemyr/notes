@@ -1,6 +1,7 @@
 /*
  * Te (jagemyr) – teer i Standard Notes. En anteckning håller en lista med teer, var och
- * ett med Sort, Namn, Temperatur, Land och om teet passar för gong fu.
+ * ett med Sort, Namn, Temperatur, Bryggtid (vanlig bryggning), Land och om teet passar
+ * för gong fu.
  *
  * Allt sparas som vanlig text i anteckningen: ett block per te, en rad per fält och en
  * tom rad mellan teerna. Ordningen i texten är den ordning teerna lades till; i appen
@@ -9,6 +10,7 @@
  *   Sort: Oolong
  *   Namn: Dong Ding
  *   Temperatur: 95
+ *   Bryggtid: 2-3
  *   Land: Taiwan
  *   Gong fu: ja
  *
@@ -18,15 +20,15 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
   var FIELD_LINE = /^\s*([^:]{1,40}?)\s*:(.*)$/;
   // "ja", "x", "✅" med mera räknas som ja; allt annat (även tomt och "nej") som nej.
   var YES = /^\s*(ja|j|yes|y|x|✓|✔|✔️|✅|1|true|sant)(?=$|[\s,.!])/i;
-  // En ren siffra eller ett spann ("95", "80-85") får °C efter sig i listan.
-  var PLAIN_TEMP = /^\d{1,3}(?:[.,]\d)?(?:\s*[-–—]\s*\d{1,3}(?:[.,]\d)?)?$/;
+  // En ren siffra eller ett spann ("95", "80-85") får °C eller min efter sig i listan.
+  var PLAIN_NUMBER = /^\d{1,3}(?:[.,]\d)?(?:\s*[-–—]\s*\d{1,3}(?:[.,]\d)?)?$/;
 
   // Filtret sparas per enhet, som i Todo.
   var FILTER_KEY = 'se.jagemyr.te.filter';
@@ -50,6 +52,7 @@
 
   // Förslag under fälten. Egna knappar i stället för <datalist> (se README).
   var TEMPS = ['70', '75', '80', '85', '90', '95', '100'];
+  var TIMES = ['1', '2', '2-3', '3', '3-4', '4', '5'];
   var COUNTRIES = ['Kina', 'Taiwan', 'Japan', 'Indien', 'Sri Lanka', 'Nepal', 'Korea', 'Vietnam', 'Kenya'];
 
   // Ordningen här är ordningen i anteckningen. Alias gör att rader skrivna för hand också känns igen.
@@ -57,11 +60,13 @@
     { key: 'sort', label: 'Sort', aliases: ['sort', 'tesort', 'typ'] },
     { key: 'namn', label: 'Namn', aliases: ['namn', 'te', 'name', 'benämning'] },
     { key: 'temperatur', label: 'Temperatur', aliases: ['temperatur', 'temp', 'vattentemperatur', 'vattentemp', 'grader'] },
+    // Tiden för vanlig bryggning; gong fu har sitt eget schema.
+    { key: 'bryggtid', label: 'Bryggtid', aliases: ['bryggtid', 'tid', 'dragtid', 'dragningstid', 'steep', 'steep time', 'minuter'] },
     { key: 'land', label: 'Land', aliases: ['land', 'ursprung', 'ursprungsland', 'country'] },
     // flag: sparas som "ja" eller tomt.
     { key: 'gongfu', label: 'Gong fu', flag: true, aliases: ['gong fu', 'gongfu', 'gong-fu', 'gong fu cha', 'gongfu cha', 'passar för gong fu'] }
   ];
-  var TEXT_KEYS = ['sort', 'namn', 'temperatur', 'land'];
+  var TEXT_KEYS = ['sort', 'namn', 'temperatur', 'bryggtid', 'land'];
 
   var el = {
     page: document.querySelector('.page'),
@@ -114,7 +119,7 @@
   // ---------- Teer ----------
 
   function emptyTea() {
-    return { values: { sort: '', namn: '', temperatur: '', land: '', gongfu: false }, extra: [], prefill: false };
+    return { values: { sort: '', namn: '', temperatur: '', bryggtid: '', land: '', gongfu: false }, extra: [], prefill: false };
   }
 
   /**
@@ -179,9 +184,25 @@
 
   /** "95" → "95 °C", "80-85" → "80–85 °C"; annan text visas som den står. */
   function formatTemp(value) {
+    return withUnit(value, '°C');
+  }
+
+  /** "3" → "3 min", "2-3" → "2–3 min"; "30 sek" och annan text visas som den står. */
+  function formatTime(value) {
+    return withUnit(value, 'min');
+  }
+
+  function withUnit(value, unit) {
     var text = oneLine(value);
-    if (!text || !PLAIN_TEMP.test(text)) return text;
-    return text.replace(/\s*[-–—]\s*/, '–') + ' °C';
+    if (!text || !PLAIN_NUMBER.test(text)) return text;
+    return text.replace(/\s*[-–—]\s*/, '–') + ' ' + unit;
+  }
+
+  /** "2 – 3 min" → "2-3", så att förslagsknappen 2–3 visas som vald. */
+  function normalizeNumber(value) {
+    return oneLine(value).toLowerCase()
+      .replace(/\s*(°c|°|grader|minuter|minut|min)\.?$/, '')
+      .replace(/\s*[-–—]\s*/, '-');
   }
 
   // ---------- Textformat ----------
@@ -267,7 +288,7 @@
     if (!filled.length) return '';
     if (filled.length === 1) {
       var v = filled[0].values;
-      var parts = [oneLine(v.namn), oneLine(v.sort), formatTemp(v.temperatur), oneLine(v.land), v.gongfu ? 'gong fu' : ''];
+      var parts = [oneLine(v.namn), oneLine(v.sort), formatTemp(v.temperatur), formatTime(v.bryggtid), oneLine(v.land), v.gongfu ? 'gong fu' : ''];
       return truncate(parts.filter(Boolean).join(' · '));
     }
     var gongfu = filled.filter(function (tea) { return tea.values.gongfu; }).length;
@@ -819,7 +840,7 @@
     if (node[name] !== value) node[name] = value;
   }
 
-  /** Namn, land, temperatur och gong fu i den ihopfällda raden. */
+  /** Namn, land och gong fu till vänster, temperatur och bryggtid till höger i den ihopfällda raden. */
   function renderSummary(card, tea) {
     var g = groupFor(tea.values.sort);
     card.style.setProperty('--sort', g.color || 'transparent');
@@ -834,27 +855,37 @@
     var meta = [];
     if (oneLine(tea.values.sort) && section && section.getAttribute('data-group') !== g.key) meta.push(g.label);
     meta.push(oneLine(tea.values.land));
-    card.querySelector('.s-meta').textContent = meta.filter(Boolean).join(' · ');
+    var metaText = meta.filter(Boolean).join(' · ');
+    card.querySelector('.s-meta').textContent = metaText;
+    card.querySelector('.s-gongfu').hidden = !tea.values.gongfu;
+    card.querySelector('.s-sub').hidden = !metaText && !tea.values.gongfu;
 
     card.querySelector('.s-temp').textContent = formatTemp(tea.values.temperatur);
-    card.querySelector('.s-gongfu').hidden = !tea.values.gongfu;
+    card.querySelector('.s-time').textContent = formatTime(tea.values.bryggtid);
     // Bryggschemat syns i det utfällda teet när det passar för gong fu.
     card.querySelector('.brew').hidden = !tea.values.gongfu;
   }
 
   /**
-   * Förslagsknapparna. Sort och temperatur visar alla knappar med den valda markerad;
-   * land visar de som börjar på det man har skrivit, som fraktbolagen i NWO.
+   * Förslagsknapparna. Sort, temperatur och bryggtid visar alla knappar med den valda
+   * markerad; land visar de som börjar på det man har skrivit, som fraktbolagen i NWO.
    */
   function renderSuggestions(card, tea, canEdit) {
     suggest(card, 'sort', canEdit, SORTS.map(function (s) { return s.label; }), function (option, value) {
       var known = knownSort(value);
       return known ? known.label === option : false;
     }, true);
-    suggest(card, 'temperatur', canEdit, TEMPS, function (option, value) {
-      return oneLine(value) === option;
-    }, true);
+    var sameNumber = function (option, value) { return normalizeNumber(value) === option; };
+    suggest(card, 'temperatur', canEdit, TEMPS, sameNumber, true);
+    suggest(card, 'bryggtid', canEdit, TIMES, sameNumber, true);
     suggest(card, 'land', canEdit, COUNTRIES, null, false);
+  }
+
+  /** Texten på en förslagsknapp: 95°, 2–3 min, annars som den står. */
+  function suggestionLabel(key, name) {
+    if (key === 'temperatur') return name + '°';
+    if (key === 'bryggtid') return name.replace('-', '–') + ' min';
+    return name;
   }
 
   function suggest(card, key, canEdit, options, isSelected, showAll) {
@@ -883,7 +914,7 @@
         dot.style.background = SORTS[i].color;
         b.appendChild(dot);
       }
-      b.appendChild(document.createTextNode(key === 'temperatur' ? name + '°' : name));
+      b.appendChild(document.createTextNode(suggestionLabel(key, name)));
       box.appendChild(b);
     });
   }

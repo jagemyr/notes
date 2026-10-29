@@ -121,23 +121,32 @@ Levererad: 2026-10-28
 
 Skriver man `Levererad: datum` för hand i en annan editor räknas alla varor i beställningen som levererade.
 
+Anteckningar från tidigare versioner fungerar som de är; en anteckning från version 1 blir en beställning.
+
+Beställningar utan något ifyllt sparas inte. Rader som inte är fält ligger kvar oförändrade, i sin beställning
+om de står i ett block med fält, annars sist. Ett datum som skrivits på annat sätt än ÅÅÅÅ-MM-DD behålls och
+visas under datumfältet tills ett nytt datum väljs.
+
 ## Te
 
-En lista med teer. Varje te har **Sort**, **Namn**, **Temperatur**, **Land** och en bock för om det
-**passar för gong fu**.
+En lista med teer. Varje te har **Sort**, **Namn**, **Temperatur**, **Bryggtid** (vanlig bryggning), **Land** och en bock
+för om det **passar för gong fu**.
 
 - Teerna grupperas per sort (grönt, vitt, gult, oolong, svart, pu-erh, mörkt, matcha, örtte, rooibos,
   sedan egna sorter och sist *Utan sort*) och sorteras på namn inom gruppen. Varje sort har en egen färg
   som kant till vänster på raden.
-- Raden visar namn, land och temperatur, och ett grönt märke **Gong fu** för teer som passar för det.
+- Raden visar namn och land, ett grönt märke **Gong fu** för teer som passar för det, och till höger
+  temperatur och bryggtid.
 - Tryck på ett te för att fälla ut det och ändra fälten. **Klar** fäller ihop det. Medan teet är utfällt
   står det kvar på sin plats även om man byter sort eller namn; det flyttas till rätt grupp när det fälls ihop.
 - **Nytt te** lägger till ett te. Ett nytt te som fälls ihop utan att något fyllts i försvinner.
 - **Ta bort te** frågar en gång till (*Tryck igen för att ta bort*).
-- Sort, temperatur och land fylls i fritt. Under fälten finns knappar med vanliga sorter, temperaturer
-  (70–100 grader) och länder; sort och temperatur visar den valda knappen markerad, länderna filtreras efter
-  det man skriver. Andra stavningar av sorterna (t.ex. *grön*, *green*, *puerh*, *shou*) hamnar i rätt grupp.
+- Sort, temperatur, bryggtid och land fylls i fritt. Under fälten finns knappar med vanliga sorter, temperaturer
+  (70–100 grader), bryggtider (1–5 minuter) och länder; sort, temperatur och bryggtid visar den valda knappen
+  markerad, länderna filtreras efter det man skriver. Andra stavningar av sorterna (t.ex. *grön*, *green*, *puerh*, *shou*) hamnar i rätt grupp.
 - Temperaturen skrivs som en siffra (`95`) eller ett spann (`80-85`) och visas som *95 °C* eller *80–85 °C*.
+  Bryggtiden skrivs på samma sätt i minuter (`3`, `2-3`) och visas som *3 min* eller *2–3 min*; annan text
+  (t.ex. `30 sek`) visas som den står. Bryggtiden gäller vanlig bryggning, gong fu har sitt eget schema.
 - **Gong fu:** när bocken är ibockad visas ett bryggschema under den: first rinse (som hälls bort),
   infusion 1–5 och +10 sekunder för varje infusion efter den femte. Schemat är detsamma för alla teer och
   sparas inte i anteckningen.
@@ -154,26 +163,22 @@ andra editorer:
 Sort: Oolong
 Namn: Dong Ding
 Temperatur: 95
+Bryggtid: 2-3
 Land: Taiwan
 Gong fu: ja
 
 Sort: Grönt
 Namn: Sencha
 Temperatur: 70-80
+Bryggtid: 1-2
 Land: Japan
 Gong fu:
 ```
 
 `Gong fu` är `ja` eller tomt; skrivet för hand räknas även `x` och `✅` som ja. Fält skrivna för hand med andra
-namn känns igen (t.ex. `Typ`, `Te`, `Temp`, `Ursprung`) och skrivs om till fältnamnen när listan sparas.
+namn känns igen (t.ex. `Typ`, `Te`, `Temp`, `Dragtid`, `Ursprung`) och skrivs om till fältnamnen när listan sparas.
 Teer utan något ifyllt sparas inte. Rader som inte är fält ligger kvar oförändrade, i sitt te om de står i ett
 block med fält, annars sist.
-
-Anteckningar från tidigare versioner fungerar som de är; en anteckning från version 1 blir en beställning.
-
-Beställningar utan något ifyllt sparas inte. Rader som inte är fält ligger kvar oförändrade, i sin beställning
-om de står i ett block med fält, annars sist. Ett datum som skrivits på annat sätt än ÅÅÅÅ-MM-DD behålls och
-visas under datumfältet tills ett nytt datum väljs.
 
 ## Installera
 

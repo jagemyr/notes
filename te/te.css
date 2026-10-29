@@ -177,27 +177,45 @@ button, input { font: inherit; color: inherit; }
 .s-title { font-weight: 600; }
 .s-title.placeholder { font-weight: 500; color: var(--muted); }
 
-.s-meta { font-size: 0.8em; color: var(--muted); }
+/* Land och Gong fu-märket på samma rad under namnet. */
+.s-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.s-meta { min-width: 0; font-size: 0.8em; color: var(--muted); }
 .s-meta:empty { display: none; }
 
+/* Temperatur och bryggtid till höger. */
 .s-status {
   flex: none;
   display: grid;
   justify-items: end;
-  gap: 3px;
+  gap: 2px;
   text-align: right;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
+
+.s-status:empty { display: none; }
 
 .s-temp {
   font-size: 0.9em;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
-.s-temp:empty { display: none; }
+.s-time {
+  font-size: 0.8em;
+  color: var(--muted);
+}
+
+.s-temp:empty,
+.s-time:empty { display: none; }
 
 .s-gongfu {
+  flex: none;
   padding: 1px 7px;
   border-radius: 9px;
   background: color-mix(in srgb, var(--success) 15%, transparent);

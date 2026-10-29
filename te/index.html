@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Te (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=1.0.0">
+  <link rel="stylesheet" href="te.css?v=1.1.0">
 </head>
 <body>
   <nav class="filters" id="filters-bar" aria-label="Visa teer" hidden>
@@ -50,11 +50,14 @@
       <button type="button" class="summary" aria-expanded="false">
         <span class="s-main">
           <span class="s-title"></span>
-          <span class="s-meta"></span>
+          <span class="s-sub">
+            <span class="s-meta"></span>
+            <span class="s-gongfu" hidden>Gong fu</span>
+          </span>
         </span>
         <span class="s-status">
           <span class="s-temp"></span>
-          <span class="s-gongfu" hidden>Gong fu</span>
+          <span class="s-time"></span>
         </span>
         <svg class="chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
@@ -78,6 +81,15 @@
             <span class="unit" aria-hidden="true">°C</span>
           </div>
           <div class="suggest" data-suggest="temperatur"></div>
+        </div>
+
+        <div class="field">
+          <span>Bryggtid</span>
+          <div class="temp-row">
+            <input type="text" data-key="bryggtid" aria-label="Bryggtid i minuter, vanlig bryggning" autocomplete="off" enterkeyhint="next">
+            <span class="unit" aria-hidden="true">min</span>
+          </div>
+          <div class="suggest" data-suggest="bryggtid"></div>
         </div>
 
         <div class="field">
@@ -112,7 +124,7 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=1.0.0"></script>
-  <script src="te.js?v=1.0.0"></script>
+  <script src="vendor/component-relay.js?v=1.1.0"></script>
+  <script src="te.js?v=1.1.0"></script>
 </body>
 </html>
