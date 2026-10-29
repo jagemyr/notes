@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Te (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=1.4.0">
+  <link rel="stylesheet" href="te.css?v=1.5.0">
 </head>
 <body>
   <nav class="filters" id="filters-bar" aria-label="Sök och filtrera teer" hidden>
@@ -18,6 +18,7 @@
     <div class="filter-row">
       <div class="chip-row" id="filters"></div>
       <button type="button" class="chip chip-toggle" id="gongfu-filter" aria-pressed="false">Gong fu</button>
+      <button type="button" class="chip chip-toggle chip-refill" id="refill-filter" aria-pressed="false">Fyll på</button>
     </div>
   </nav>
 
@@ -62,6 +63,7 @@
           <span class="s-sub">
             <span class="s-meta"></span>
             <span class="s-gongfu" hidden>Gong fu</span>
+            <span class="s-refill" hidden>Fyll på</span>
           </span>
           <span class="s-taste"></span>
         </span>
@@ -114,10 +116,16 @@
           <div class="suggest" data-suggest="smak"></div>
         </div>
 
-        <label class="toggle">
-          <input type="checkbox" class="check gongfu-check">
-          <span>Passar för gong fu</span>
-        </label>
+        <div class="toggles">
+          <label class="toggle toggle-refill">
+            <input type="checkbox" class="check refill-check" data-flag="fyllpa">
+            <span>Behöver fyllas på</span>
+          </label>
+          <label class="toggle toggle-gongfu">
+            <input type="checkbox" class="check gongfu-check" data-flag="gongfu">
+            <span>Passar för gong fu</span>
+          </label>
+        </div>
 
         <!-- Raderna fylls i av te.js efter sorten (vitt te har ett eget schema). -->
         <table class="brew" hidden>
@@ -133,7 +141,7 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=1.4.0"></script>
-  <script src="te.js?v=1.4.0"></script>
+  <script src="vendor/component-relay.js?v=1.5.0"></script>
+  <script src="te.js?v=1.5.0"></script>
 </body>
 </html>

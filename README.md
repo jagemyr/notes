@@ -129,14 +129,14 @@ visas under datumfältet tills ett nytt datum väljs.
 
 ## Te
 
-En lista med teer. Varje te har **Sort**, **Namn**, **Temperatur**, **Bryggtid** (vanlig bryggning), **Land**, **Smak** och en
-bock för om det **passar för gong fu**.
+En lista med teer. Varje te har **Sort**, **Namn**, **Temperatur**, **Bryggtid** (vanlig bryggning), **Land**, **Smak** och bockar
+för om det **behöver fyllas på** och om det **passar för gong fu**.
 
 - Teerna grupperas per sort (grönt, vitt, gult, oolong, svart, pu-erh, mörkt, matcha, örtte, rooibos,
   sedan egna sorter och sist *Utan sort*) och sorteras på namn inom gruppen. Varje sort har en egen färg
   som kant till vänster på raden.
-- Raden visar namn och land, ett grönt märke **Gong fu** för teer som passar för det, smaken på en egen rad
-  under, och till höger temperatur och bryggtid.
+- Raden visar namn och land, ett grönt märke **Gong fu** och ett orange märke **Fyll på** när de är ibockade,
+  smaken på en egen rad under, och till höger temperatur och bryggtid.
 - Tryck på ett te för att fälla ut det och ändra fälten. **Klar** fäller ihop det. Medan teet är utfällt
   står det kvar på sin plats även om man byter sort eller namn; det flyttas till rätt grupp när det fälls ihop.
 - **Nytt te** lägger till ett te. Ett nytt te som fälls ihop utan att något fyllts i försvinner.
@@ -160,11 +160,13 @@ bock för om det **passar för gong fu**.
   *honung taiwan* hittar taiwanesiska teer som smakar honung. Stora och små bokstäver, accenter och
   bindestreck spelar ingen roll (*rokig* hittar *rökig*, *puerh* hittar *Pu-erh*). Sökningen går att
   kombinera med filtren, rensas med krysset eller Escape och sparas inte.
-- **Filter:** knapparna under sökfältet visar alla teer eller en sort i taget, och **Gong fu** visar bara teer som passar
-  för gong fu (går att kombinera med en sort). Filtret sparas per enhet. Med ett filter valt får ett nytt te
-  den sorten (och gong fu).
+- **Fyll på:** bocka i *Behöver fyllas på* när ett te håller på att ta slut. Filterknappen **Fyll på** visar bara
+  de teerna, som en inköpslista, och anteckningslistan i Standard Notes visar hur många som ska fyllas på.
+- **Filter:** knapparna under sökfältet visar alla teer eller en sort i taget. **Gong fu** visar bara teer som passar
+  för gong fu och **Fyll på** bara teer som behöver köpas; de går att kombinera med varandra, med en sort och med
+  sökningen. Filtren sparas per enhet. Med ett filter valt får ett nytt te den sorten (och gong fu eller fyll på).
 - Enter hoppar till nästa fält i samma te.
-- Anteckningslistan i Standard Notes visar till exempel *9 teer, 6 för gong fu: 3 oolong, 2 grönt, 1 vitt, …*.
+- Anteckningslistan i Standard Notes visar till exempel *9 teer, 6 för gong fu, 2 att fylla på: 3 oolong, 2 grönt, …*.
 
 Allt sparas som vanlig text i anteckningen, ett block per te med en tom rad emellan, så det går att läsa även i
 andra editorer:
@@ -177,6 +179,7 @@ Bryggtid: 2-3
 Land: Taiwan
 Smak: honung, persika, blommig
 Gong fu: ja
+Fyll på:
 
 Sort: Grönt
 Namn: Sencha
@@ -185,9 +188,11 @@ Bryggtid: 1-2
 Land: Japan
 Smak:
 Gong fu:
+Fyll på: ja
 ```
 
-`Gong fu` är `ja` eller tomt; skrivet för hand räknas även `x` och `✅` som ja. Fält skrivna för hand med andra
+`Gong fu` och `Fyll på` är `ja` eller tomt; skrivet för hand räknas även `x` och `✅` som ja, och `Slut: ja` eller
+`Köp: ja` som Fyll på. Fält skrivna för hand med andra
 namn känns igen (t.ex. `Typ`, `Te`, `Temp`, `Dragtid`, `Ursprung`, `Smaknoter`) och skrivs om till fältnamnen när listan sparas.
 Teer utan något ifyllt sparas inte. Rader som inte är fält ligger kvar oförändrade, i sitt te om de står i ett
 block med fält, annars sist.
