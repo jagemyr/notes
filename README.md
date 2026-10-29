@@ -129,13 +129,13 @@ visas under datumfältet tills ett nytt datum väljs.
 
 ## Te
 
-En lista med teer. Varje te har **Sort**, **Namn**, **Temperatur**, **Bryggtid** (vanlig bryggning), **Land**, **Smak** och bockar
+En lista med teer. Varje te har **Sort**, **Namn**, **Temperatur**, **Bryggtid** (vanlig bryggning), **Land**, **Butik**, **Smak** och bockar
 för om det **behöver fyllas på** och om det **passar för gong fu**.
 
 - Teerna grupperas per sort (grönt, vitt, gult, oolong, svart, pu-erh, mörkt, matcha, örtte, rooibos,
   sedan egna sorter och sist *Utan sort*) och sorteras på namn inom gruppen. Varje sort har en egen färg
   som kant till vänster på raden.
-- Raden visar namn och land, ett grönt märke **Gong fu** och ett orange märke **Fyll på** när de är ibockade,
+- Raden visar namn, land och butik, ett grönt märke **Gong fu** och ett orange märke **Fyll på** när de är ibockade,
   smaken på en egen rad under, och till höger temperatur och bryggtid.
 - Tryck på ett te för att fälla ut det och ändra fälten. **Klar** fäller ihop det. Medan teet är utfällt
   står det kvar på sin plats även om man byter sort eller namn; det flyttas till rätt grupp när det fälls ihop.
@@ -147,6 +147,9 @@ för om det **behöver fyllas på** och om det **passar för gong fu**.
 - Temperaturen skrivs som en siffra (`95`) eller ett spann (`80-85`) och visas som *95 °C* eller *80–85 °C*.
   Bryggtiden skrivs på samma sätt i minuter (`3`, `2-3`) och visas som *3 min* eller *2–3 min*; annan text
   (t.ex. `30 sek`) visas som den står. Bryggtiden gäller vanlig bryggning, gong fu har sitt eget schema.
+- **Butik:** var teet köptes. Under fältet finns knappar med *In the Mood for Tea*, *The Tea Centre* och de butiker
+  som har skrivits in på andra teer i anteckningen (flest teer först). Skriver man in en ny butik blir den alltså en
+  knapp på alla andra teer. Med sökningen och **Fyll på** får man inköpslistan för en butik, t.ex. *tea centre*.
 - **Smak:** smakord åtskilda med kommatecken, t.ex. *honung, persika, blommig*. Under fältet finns knappar med
   vanliga smakord (blommig, fruktig, citrus, honung, söt, nötig, rostad, rökig, maltig, jordig, träig, gräsig,
   mineralisk, kryddig). Ett tryck lägger till ordet sist, ett till tar bort det; ord som finns i fältet är
@@ -156,7 +159,7 @@ för om det **behöver fyllas på** och om det **passar för gong fu**.
   schema med längre dragningar (infusion 1 är 20–30 sekunder och tiden ökar till 40–50 sekunder vid den femte),
   och sköljningen kan hoppas över. Schemat byter direkt när man ändrar sort. Schemana finns i koden
   (`BREW_SCHEDULES` i `te.js`) och sparas inte i anteckningen.
-- **Sök:** fältet överst söker i namn, sort, land och smak. Alla ord man skriver måste finnas i teet, så
+- **Sök:** fältet överst söker i namn, sort, land, butik och smak. Alla ord man skriver måste finnas i teet, så
   *honung taiwan* hittar taiwanesiska teer som smakar honung. Stora och små bokstäver, accenter och
   bindestreck spelar ingen roll (*rokig* hittar *rökig*, *puerh* hittar *Pu-erh*). Sökningen går att
   kombinera med filtren, rensas med krysset eller Escape och sparas inte.
@@ -177,6 +180,7 @@ Namn: Dong Ding
 Temperatur: 95
 Bryggtid: 2-3
 Land: Taiwan
+Butik: In the Mood for Tea
 Smak: honung, persika, blommig
 Gong fu: ja
 Fyll på:
@@ -186,6 +190,7 @@ Namn: Sencha
 Temperatur: 70-80
 Bryggtid: 1-2
 Land: Japan
+Butik: The Tea Centre
 Smak:
 Gong fu:
 Fyll på: ja
@@ -193,7 +198,7 @@ Fyll på: ja
 
 `Gong fu` och `Fyll på` är `ja` eller tomt; skrivet för hand räknas även `x` och `✅` som ja, och `Slut: ja` eller
 `Köp: ja` som Fyll på. Fält skrivna för hand med andra
-namn känns igen (t.ex. `Typ`, `Te`, `Temp`, `Dragtid`, `Ursprung`, `Smaknoter`) och skrivs om till fältnamnen när listan sparas.
+namn känns igen (t.ex. `Typ`, `Te`, `Temp`, `Dragtid`, `Ursprung`, `Köpt i`, `Smaknoter`) och skrivs om till fältnamnen när listan sparas.
 Teer utan något ifyllt sparas inte. Rader som inte är fält ligger kvar oförändrade, i sitt te om de står i ett
 block med fält, annars sist.
 

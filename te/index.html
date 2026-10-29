@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Te (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=1.5.0">
+  <link rel="stylesheet" href="te.css?v=1.6.0">
 </head>
 <body>
   <nav class="filters" id="filters-bar" aria-label="Sök och filtrera teer" hidden>
@@ -111,6 +111,12 @@
         </div>
 
         <div class="field">
+          <span>Butik</span>
+          <input type="text" data-key="butik" aria-label="Butik" placeholder="Var du köpte teet" autocomplete="off" autocapitalize="words" enterkeyhint="next">
+          <div class="suggest" data-suggest="butik"></div>
+        </div>
+
+        <div class="field">
           <span>Smak</span>
           <input type="text" data-key="smak" aria-label="Smak" placeholder="t.ex. honung, persika" autocomplete="off" autocapitalize="none" enterkeyhint="done">
           <div class="suggest" data-suggest="smak"></div>
@@ -141,7 +147,7 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=1.5.0"></script>
-  <script src="te.js?v=1.5.0"></script>
+  <script src="vendor/component-relay.js?v=1.6.0"></script>
+  <script src="te.js?v=1.6.0"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 /*
  * Te (jagemyr) – teer i Standard Notes. En anteckning håller en lista med teer, var och
- * ett med Sort, Namn, Temperatur, Bryggtid (vanlig bryggning), Land, Smak, om teet
- * passar för gong fu och om det behöver fyllas på.
+ * ett med Sort, Namn, Temperatur, Bryggtid (vanlig bryggning), Land, Butik, Smak, om
+ * teet passar för gong fu och om det behöver fyllas på.
  *
  * Allt sparas som vanlig text i anteckningen: ett block per te, en rad per fält och en
  * tom rad mellan teerna. Ordningen i texten är den ordning teerna lades till; i appen
@@ -12,6 +12,7 @@
  *   Temperatur: 95
  *   Bryggtid: 2-3
  *   Land: Taiwan
+ *   Butik: In the Mood for Tea
  *   Smak: honung, blommig
  *   Gong fu: ja
  *   Fyll på:
@@ -22,7 +23,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.5.0';
+  var VERSION = '1.6.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -60,6 +61,8 @@
   var TASTES = ['blommig', 'fruktig', 'citrus', 'honung', 'söt', 'nötig', 'rostad', 'rökig', 'maltig',
     'jordig', 'träig', 'gräsig', 'mineralisk', 'kryddig'];
   var COUNTRIES = ['Kina', 'Taiwan', 'Japan', 'Indien', 'Sri Lanka', 'Nepal', 'Korea', 'Vietnam', 'Kenya'];
+  // Butiker som alltid finns som knappar; butiker som skrivits in på andra teer läggs till efter dem.
+  var SHOPS = ['In the Mood for Tea', 'The Tea Centre'];
 
   // Gong fu-scheman: [steg, anteckning, tid]. Vitt te får ett eget schema med längre
   // dragningar, eftersom knopparna släpper smak långsamt; alla andra sorter får standard.
@@ -98,6 +101,8 @@
     // Tiden för vanlig bryggning; gong fu har sitt eget schema.
     { key: 'bryggtid', label: 'Bryggtid', aliases: ['bryggtid', 'tid', 'dragtid', 'dragningstid', 'steep', 'steep time', 'minuter'] },
     { key: 'land', label: 'Land', aliases: ['land', 'ursprung', 'ursprungsland', 'country'] },
+    // Var teet köptes, fritt namn.
+    { key: 'butik', label: 'Butik', aliases: ['butik', 'köpt', 'köpt i', 'köpt på', 'köpt hos', 'köpställe', 'inköpsställe', 'affär', 'handlare', 'shop', 'store'] },
     // Smakord åtskilda med kommatecken.
     { key: 'smak', label: 'Smak', aliases: ['smak', 'smaker', 'smakprofil', 'smaknoter', 'smaknot', 'smakbeskrivning', 'flavor', 'flavour', 'taste', 'tasting notes'] },
     // flag: sparas som "ja" eller tomt.
@@ -105,7 +110,7 @@
     // Teet håller på att ta slut och ska köpas igen.
     { key: 'fyllpa', label: 'Fyll på', flag: true, aliases: ['fyll på', 'fyll pa', 'fyllpå', 'påfyllning', 'behöver fyllas på', 'snart slut', 'slut', 'köp', 'köpa', 'köp mer', 'köpa mer'] }
   ];
-  var TEXT_KEYS = ['sort', 'namn', 'temperatur', 'bryggtid', 'land', 'smak'];
+  var TEXT_KEYS = ['sort', 'namn', 'temperatur', 'bryggtid', 'land', 'butik', 'smak'];
 
   var el = {
     page: document.querySelector('.page'),
@@ -164,7 +169,7 @@
   // ---------- Teer ----------
 
   function emptyTea() {
-    return { values: { sort: '', namn: '', temperatur: '', bryggtid: '', land: '', smak: '', gongfu: false, fyllpa: false }, extra: [], prefill: false };
+    return { values: { sort: '', namn: '', temperatur: '', bryggtid: '', land: '', butik: '', smak: '', gongfu: false, fyllpa: false }, extra: [], prefill: false };
   }
 
   /**
@@ -666,7 +671,7 @@
 
   // ---------- Sök ----------
   //
-  // Söker i namn, sort, land och smak. Alla ord man skriver måste finnas någonstans i teet,
+  // Söker i namn, sort, land, butik och smak. Alla ord man skriver måste finnas någonstans i teet,
   // så "honung taiwan" hittar de taiwanesiska teerna som smakar honung. Stora och små
   // bokstäver, accenter och bindestreck spelar ingen roll ("rokig" hittar "rökig",
   // "puerh" hittar "Pu-erh").
@@ -685,7 +690,7 @@
     var terms = searchTerms();
     if (!terms.length) return true;
     var v = tea.values;
-    var hay = foldText([v.namn, v.sort, groupFor(v.sort).label, v.land, v.smak].join(' '));
+    var hay = foldText([v.namn, v.sort, groupFor(v.sort).label, v.land, v.butik, v.smak].join(' '));
     return terms.every(function (term) { return hay.indexOf(term) !== -1; });
   }
 
@@ -1015,7 +1020,7 @@
     var section = card.closest('.group');
     var meta = [];
     if (oneLine(tea.values.sort) && section && section.getAttribute('data-group') !== g.key) meta.push(g.label);
-    meta.push(oneLine(tea.values.land));
+    meta.push(oneLine(tea.values.land), oneLine(tea.values.butik));
     var metaText = meta.filter(Boolean).join(' · ');
     card.querySelector('.s-meta').textContent = metaText;
     card.querySelector('.s-gongfu').hidden = !tea.values.gongfu;
@@ -1062,7 +1067,7 @@
   /**
    * Förslagsknapparna. Sort, temperatur och bryggtid visar alla knappar med den valda
    * markerad; smak markerar alla ord som finns i fältet; land visar de som börjar på det
-   * man har skrivit, som fraktbolagen i NWO.
+   * man har skrivit, som fraktbolagen i NWO; butik visar dina butiker med den valda markerad.
    */
   function renderSuggestions(card, tea, canEdit) {
     suggest(card, 'sort', canEdit, SORTS.map(function (s) { return s.label; }), function (option, value) {
@@ -1073,7 +1078,36 @@
     suggest(card, 'temperatur', canEdit, TEMPS, sameNumber, true);
     suggest(card, 'bryggtid', canEdit, TIMES, sameNumber, true);
     suggest(card, 'land', canEdit, COUNTRIES, null, false);
+    suggest(card, 'butik', canEdit, shopOptions(tea), function (option, value) {
+      return option.toLowerCase() === oneLine(value).toLowerCase();
+    }, true);
     suggest(card, 'smak', canEdit, TASTES, function (option, value) { return hasTaste(value, option); }, true);
+  }
+
+  /**
+   * Butikerna att välja bland: de fasta först, sedan de som skrivits in på andra teer i
+   * anteckningen, flest teer först. Teet man redigerar räknas inte, så att det man håller på
+   * att skriva inte blir en knapp.
+   */
+  function shopOptions(current) {
+    var seen = {};
+    var counts = {};
+    var extra = [];
+    SHOPS.forEach(function (name) { seen[name.toLowerCase()] = true; });
+    state.teas.forEach(function (tea) {
+      if (tea === current || !hasContent(tea)) return;
+      var name = oneLine(tea.values.butik);
+      var key = name.toLowerCase();
+      if (!name) return;
+      counts[key] = (counts[key] || 0) + 1;
+      if (seen[key]) return;
+      seen[key] = true;
+      extra.push(name);
+    });
+    extra.sort(function (a, b) {
+      return counts[b.toLowerCase()] - counts[a.toLowerCase()] || a.localeCompare(b, 'sv');
+    });
+    return SHOPS.concat(extra);
   }
 
   /** Texten på en förslagsknapp: 95°, 2–3 min, annars som den står. */
