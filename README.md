@@ -152,8 +152,10 @@ bock för om det **passar för gong fu**.
   mineralisk, kryddig). Ett tryck lägger till ordet sist, ett till tar bort det; ord som finns i fältet är
   markerade. Egna ord skrivs direkt i fältet och ligger kvar.
 - **Gong fu:** när bocken är ibockad visas ett bryggschema under den: first rinse (som hälls bort),
-  infusion 1–5 och +10 sekunder för varje infusion efter den femte. Schemat är detsamma för alla teer och
-  sparas inte i anteckningen.
+  infusion 1–5 och +10 sekunder för varje infusion efter den femte. **Vitt te** (sorten Vitt) får ett eget
+  schema med längre dragningar (infusion 1 är 20–30 sekunder och tiden ökar till 40–50 sekunder vid den femte),
+  och sköljningen kan hoppas över. Schemat byter direkt när man ändrar sort. Schemana finns i koden
+  (`BREW_SCHEDULES` i `te.js`) och sparas inte i anteckningen.
 - **Sök:** fältet överst söker i namn, sort, land och smak. Alla ord man skriver måste finnas i teet, så
   *honung taiwan* hittar taiwanesiska teer som smakar honung. Stora och små bokstäver, accenter och
   bindestreck spelar ingen roll (*rokig* hittar *rökig*, *puerh* hittar *Pu-erh*). Sökningen går att

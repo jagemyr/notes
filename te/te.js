@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.3.0';
+  var VERSION = '1.4.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -58,6 +58,35 @@
   var TASTES = ['blommig', 'fruktig', 'citrus', 'honung', 'söt', 'nötig', 'rostad', 'rökig', 'maltig',
     'jordig', 'träig', 'gräsig', 'mineralisk', 'kryddig'];
   var COUNTRIES = ['Kina', 'Taiwan', 'Japan', 'Indien', 'Sri Lanka', 'Nepal', 'Korea', 'Vietnam', 'Kenya'];
+
+  // Gong fu-scheman: [steg, anteckning, tid]. Vitt te får ett eget schema med längre
+  // dragningar, eftersom knopparna släpper smak långsamt; alla andra sorter får standard.
+  var BREW_SCHEDULES = {
+    standard: {
+      title: 'Gong fu',
+      rows: [
+        ['First rinse', '(pouring away)', '5–10 sec'],
+        ['Infusion 1', '', '10–15 sec'],
+        ['Infusion 2', '', '5–10 sec'],
+        ['Infusion 3', '', '10–15 sec'],
+        ['Infusion 4', '', '15–20 sec'],
+        ['Infusion 5', '', '20–30 sec'],
+        ['Infusion 6+', '', '+10 sec per extra infusion']
+      ]
+    },
+    white: {
+      title: 'Gong fu · vitt te',
+      rows: [
+        ['First rinse', '(pouring away, can be skipped)', '10 sec'],
+        ['Infusion 1', '', '20–30 sec'],
+        ['Infusion 2', '', '15–20 sec'],
+        ['Infusion 3', '', '20–25 sec'],
+        ['Infusion 4', '', '30–35 sec'],
+        ['Infusion 5', '', '40–50 sec'],
+        ['Infusion 6+', '', '+10 sec per extra infusion']
+      ]
+    }
+  };
 
   // Ordningen här är ordningen i anteckningen. Alias gör att rader skrivna för hand också känns igen.
   var FIELDS = [
@@ -964,7 +993,37 @@
     card.querySelector('.s-temp').textContent = formatTemp(tea.values.temperatur);
     card.querySelector('.s-time').textContent = formatTime(tea.values.bryggtid);
     // Bryggschemat syns i det utfällda teet när det passar för gong fu.
-    card.querySelector('.brew').hidden = !tea.values.gongfu;
+    var brew = card.querySelector('.brew');
+    brew.hidden = !tea.values.gongfu;
+    if (tea.values.gongfu) renderBrew(brew, g.key === 'k:Vitt' ? 'white' : 'standard');
+  }
+
+  /** Fyller schemat; byggs bara om när det byter schema (t.ex. när sorten blir Vitt). */
+  function renderBrew(table, name) {
+    if (table.getAttribute('data-schedule') === name) return;
+    table.setAttribute('data-schedule', name);
+    var schedule = BREW_SCHEDULES[name];
+    table.querySelector('caption').textContent = schedule.title;
+    var body = table.querySelector('tbody');
+    body.textContent = '';
+    schedule.rows.forEach(function (row) {
+      var tr = document.createElement('tr');
+      var th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = row[0];
+      if (row[1]) {
+        var note = document.createElement('span');
+        note.className = 'brew-note';
+        note.textContent = row[1];
+        th.appendChild(document.createTextNode(' '));
+        th.appendChild(note);
+      }
+      var td = document.createElement('td');
+      td.textContent = row[2];
+      tr.appendChild(th);
+      tr.appendChild(td);
+      body.appendChild(tr);
+    });
   }
 
   /**
