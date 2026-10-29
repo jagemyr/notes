@@ -1,7 +1,7 @@
 /*
  * Te (jagemyr) – teer i Standard Notes. En anteckning håller en lista med teer, var och
- * ett med Sort, Namn, Temperatur, Bryggtid (vanlig bryggning), Land och om teet passar
- * för gong fu.
+ * ett med Sort, Namn, Temperatur, Bryggtid (vanlig bryggning), Land, Smak och om teet
+ * passar för gong fu.
  *
  * Allt sparas som vanlig text i anteckningen: ett block per te, en rad per fält och en
  * tom rad mellan teerna. Ordningen i texten är den ordning teerna lades till; i appen
@@ -12,6 +12,7 @@
  *   Temperatur: 95
  *   Bryggtid: 2-3
  *   Land: Taiwan
+ *   Smak: honung, blommig
  *   Gong fu: ja
  *
  * Rader som inte är fält (t.ex. något som skrivits i en annan editor) ligger kvar
@@ -20,7 +21,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.1.0';
+  var VERSION = '1.2.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -53,6 +54,9 @@
   // Förslag under fälten. Egna knappar i stället för <datalist> (se README).
   var TEMPS = ['70', '75', '80', '85', '90', '95', '100'];
   var TIMES = ['1', '2', '2-3', '3', '3-4', '4', '5'];
+  // Smakord: ett tryck lägger till ordet i Smak, ett till tar bort det.
+  var TASTES = ['blommig', 'fruktig', 'citrus', 'honung', 'söt', 'nötig', 'rostad', 'rökig', 'maltig',
+    'jordig', 'träig', 'gräsig', 'mineralisk', 'kryddig'];
   var COUNTRIES = ['Kina', 'Taiwan', 'Japan', 'Indien', 'Sri Lanka', 'Nepal', 'Korea', 'Vietnam', 'Kenya'];
 
   // Ordningen här är ordningen i anteckningen. Alias gör att rader skrivna för hand också känns igen.
@@ -63,10 +67,12 @@
     // Tiden för vanlig bryggning; gong fu har sitt eget schema.
     { key: 'bryggtid', label: 'Bryggtid', aliases: ['bryggtid', 'tid', 'dragtid', 'dragningstid', 'steep', 'steep time', 'minuter'] },
     { key: 'land', label: 'Land', aliases: ['land', 'ursprung', 'ursprungsland', 'country'] },
+    // Smakord åtskilda med kommatecken.
+    { key: 'smak', label: 'Smak', aliases: ['smak', 'smaker', 'smakprofil', 'smaknoter', 'smaknot', 'smakbeskrivning', 'flavor', 'flavour', 'taste', 'tasting notes'] },
     // flag: sparas som "ja" eller tomt.
     { key: 'gongfu', label: 'Gong fu', flag: true, aliases: ['gong fu', 'gongfu', 'gong-fu', 'gong fu cha', 'gongfu cha', 'passar för gong fu'] }
   ];
-  var TEXT_KEYS = ['sort', 'namn', 'temperatur', 'bryggtid', 'land'];
+  var TEXT_KEYS = ['sort', 'namn', 'temperatur', 'bryggtid', 'land', 'smak'];
 
   var el = {
     page: document.querySelector('.page'),
@@ -119,7 +125,7 @@
   // ---------- Teer ----------
 
   function emptyTea() {
-    return { values: { sort: '', namn: '', temperatur: '', bryggtid: '', land: '', gongfu: false }, extra: [], prefill: false };
+    return { values: { sort: '', namn: '', temperatur: '', bryggtid: '', land: '', smak: '', gongfu: false }, extra: [], prefill: false };
   }
 
   /**
@@ -203,6 +209,25 @@
     return oneLine(value).toLowerCase()
       .replace(/\s*(°c|°|grader|minuter|minut|min)\.?$/, '')
       .replace(/\s*[-–—]\s*/, '-');
+  }
+
+  /** "honung, Persika ;blommig" → ["honung", "Persika", "blommig"]. */
+  function tasteWords(value) {
+    return String(value || '').split(/\s*[,;\n]\s*/).map(function (w) { return w.trim(); }).filter(Boolean);
+  }
+
+  function hasTaste(value, word) {
+    var wanted = word.toLowerCase();
+    return tasteWords(value).some(function (w) { return w.toLowerCase() === wanted; });
+  }
+
+  /** Lägger till ordet sist, eller tar bort det om det redan finns. */
+  function toggleTaste(value, word) {
+    var words = tasteWords(value);
+    var wanted = word.toLowerCase();
+    var kept = words.filter(function (w) { return w.toLowerCase() !== wanted; });
+    if (kept.length === words.length) kept.push(word);
+    return kept.join(', ');
   }
 
   // ---------- Textformat ----------
@@ -495,7 +520,9 @@
 
     if (button.hasAttribute('data-value')) {
       var key = button.closest('[data-suggest]').getAttribute('data-suggest');
-      tea.values[key] = button.getAttribute('data-value');
+      var chosen = button.getAttribute('data-value');
+      // Smakorden läggs till och tas bort; de andra knapparna ersätter fältet.
+      tea.values[key] = key === 'smak' ? toggleTaste(tea.values.smak, chosen) : chosen;
       touch(tea);
       renderCard(card, tea, index, true);
       renderFilters();
@@ -840,7 +867,10 @@
     if (node[name] !== value) node[name] = value;
   }
 
-  /** Namn, land och gong fu till vänster, temperatur och bryggtid till höger i den ihopfällda raden. */
+  /**
+   * Den ihopfällda raden: namn, land och gong fu och under dem smaken till vänster,
+   * temperatur och bryggtid till höger.
+   */
   function renderSummary(card, tea) {
     var g = groupFor(tea.values.sort);
     card.style.setProperty('--sort', g.color || 'transparent');
@@ -859,6 +889,7 @@
     card.querySelector('.s-meta').textContent = metaText;
     card.querySelector('.s-gongfu').hidden = !tea.values.gongfu;
     card.querySelector('.s-sub').hidden = !metaText && !tea.values.gongfu;
+    card.querySelector('.s-taste').textContent = tasteWords(tea.values.smak).join(', ');
 
     card.querySelector('.s-temp').textContent = formatTemp(tea.values.temperatur);
     card.querySelector('.s-time').textContent = formatTime(tea.values.bryggtid);
@@ -868,7 +899,8 @@
 
   /**
    * Förslagsknapparna. Sort, temperatur och bryggtid visar alla knappar med den valda
-   * markerad; land visar de som börjar på det man har skrivit, som fraktbolagen i NWO.
+   * markerad; smak markerar alla ord som finns i fältet; land visar de som börjar på det
+   * man har skrivit, som fraktbolagen i NWO.
    */
   function renderSuggestions(card, tea, canEdit) {
     suggest(card, 'sort', canEdit, SORTS.map(function (s) { return s.label; }), function (option, value) {
@@ -879,6 +911,7 @@
     suggest(card, 'temperatur', canEdit, TEMPS, sameNumber, true);
     suggest(card, 'bryggtid', canEdit, TIMES, sameNumber, true);
     suggest(card, 'land', canEdit, COUNTRIES, null, false);
+    suggest(card, 'smak', canEdit, TASTES, function (option, value) { return hasTaste(value, option); }, true);
   }
 
   /** Texten på en förslagsknapp: 95°, 2–3 min, annars som den står. */

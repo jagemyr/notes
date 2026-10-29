@@ -168,7 +168,8 @@ button, input { font: inherit; color: inherit; }
 }
 
 .s-title,
-.s-meta {
+.s-meta,
+.s-taste {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -187,6 +188,16 @@ button, input { font: inherit; color: inherit; }
 
 .s-meta { min-width: 0; font-size: 0.8em; color: var(--muted); }
 .s-meta:empty { display: none; }
+
+/* Smaken på en egen rad, kursiv så att den skiljer sig från landet. */
+.s-taste {
+  font-size: 0.8em;
+  font-style: italic;
+  color: var(--fg);
+  opacity: 0.75;
+}
+
+.s-taste:empty { display: none; }
 
 /* Temperatur och bryggtid till höger. */
 .s-status {

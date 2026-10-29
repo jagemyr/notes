@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Te (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=1.1.0">
+  <link rel="stylesheet" href="te.css?v=1.2.0">
 </head>
 <body>
   <nav class="filters" id="filters-bar" aria-label="Visa teer" hidden>
@@ -54,6 +54,7 @@
             <span class="s-meta"></span>
             <span class="s-gongfu" hidden>Gong fu</span>
           </span>
+          <span class="s-taste"></span>
         </span>
         <span class="s-status">
           <span class="s-temp"></span>
@@ -94,8 +95,14 @@
 
         <div class="field">
           <span>Land</span>
-          <input type="text" data-key="land" aria-label="Land" autocomplete="off" autocapitalize="sentences" enterkeyhint="done">
+          <input type="text" data-key="land" aria-label="Land" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
           <div class="suggest" data-suggest="land"></div>
+        </div>
+
+        <div class="field">
+          <span>Smak</span>
+          <input type="text" data-key="smak" aria-label="Smak" placeholder="t.ex. honung, persika" autocomplete="off" autocapitalize="none" enterkeyhint="done">
+          <div class="suggest" data-suggest="smak"></div>
         </div>
 
         <label class="toggle">
@@ -124,7 +131,7 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=1.1.0"></script>
-  <script src="te.js?v=1.1.0"></script>
+  <script src="vendor/component-relay.js?v=1.2.0"></script>
+  <script src="te.js?v=1.2.0"></script>
 </body>
 </html>

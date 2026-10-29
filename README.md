@@ -129,14 +129,14 @@ visas under datumfältet tills ett nytt datum väljs.
 
 ## Te
 
-En lista med teer. Varje te har **Sort**, **Namn**, **Temperatur**, **Bryggtid** (vanlig bryggning), **Land** och en bock
-för om det **passar för gong fu**.
+En lista med teer. Varje te har **Sort**, **Namn**, **Temperatur**, **Bryggtid** (vanlig bryggning), **Land**, **Smak** och en
+bock för om det **passar för gong fu**.
 
 - Teerna grupperas per sort (grönt, vitt, gult, oolong, svart, pu-erh, mörkt, matcha, örtte, rooibos,
   sedan egna sorter och sist *Utan sort*) och sorteras på namn inom gruppen. Varje sort har en egen färg
   som kant till vänster på raden.
-- Raden visar namn och land, ett grönt märke **Gong fu** för teer som passar för det, och till höger
-  temperatur och bryggtid.
+- Raden visar namn och land, ett grönt märke **Gong fu** för teer som passar för det, smaken på en egen rad
+  under, och till höger temperatur och bryggtid.
 - Tryck på ett te för att fälla ut det och ändra fälten. **Klar** fäller ihop det. Medan teet är utfällt
   står det kvar på sin plats även om man byter sort eller namn; det flyttas till rätt grupp när det fälls ihop.
 - **Nytt te** lägger till ett te. Ett nytt te som fälls ihop utan att något fyllts i försvinner.
@@ -147,6 +147,10 @@ för om det **passar för gong fu**.
 - Temperaturen skrivs som en siffra (`95`) eller ett spann (`80-85`) och visas som *95 °C* eller *80–85 °C*.
   Bryggtiden skrivs på samma sätt i minuter (`3`, `2-3`) och visas som *3 min* eller *2–3 min*; annan text
   (t.ex. `30 sek`) visas som den står. Bryggtiden gäller vanlig bryggning, gong fu har sitt eget schema.
+- **Smak:** smakord åtskilda med kommatecken, t.ex. *honung, persika, blommig*. Under fältet finns knappar med
+  vanliga smakord (blommig, fruktig, citrus, honung, söt, nötig, rostad, rökig, maltig, jordig, träig, gräsig,
+  mineralisk, kryddig). Ett tryck lägger till ordet sist, ett till tar bort det; ord som finns i fältet är
+  markerade. Egna ord skrivs direkt i fältet och ligger kvar.
 - **Gong fu:** när bocken är ibockad visas ett bryggschema under den: first rinse (som hälls bort),
   infusion 1–5 och +10 sekunder för varje infusion efter den femte. Schemat är detsamma för alla teer och
   sparas inte i anteckningen.
@@ -165,6 +169,7 @@ Namn: Dong Ding
 Temperatur: 95
 Bryggtid: 2-3
 Land: Taiwan
+Smak: honung, persika, blommig
 Gong fu: ja
 
 Sort: Grönt
@@ -172,11 +177,12 @@ Namn: Sencha
 Temperatur: 70-80
 Bryggtid: 1-2
 Land: Japan
+Smak:
 Gong fu:
 ```
 
 `Gong fu` är `ja` eller tomt; skrivet för hand räknas även `x` och `✅` som ja. Fält skrivna för hand med andra
-namn känns igen (t.ex. `Typ`, `Te`, `Temp`, `Dragtid`, `Ursprung`) och skrivs om till fältnamnen när listan sparas.
+namn känns igen (t.ex. `Typ`, `Te`, `Temp`, `Dragtid`, `Ursprung`, `Smaknoter`) och skrivs om till fältnamnen när listan sparas.
 Teer utan något ifyllt sparas inte. Rader som inte är fält ligger kvar oförändrade, i sitt te om de står i ett
 block med fält, annars sist.
 
