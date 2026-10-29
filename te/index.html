@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Te (jagemyr)</title>
+  <link rel="stylesheet" href="te.css?v=1.0.0">
+</head>
+<body>
+  <nav class="filters" id="filters-bar" aria-label="Visa teer" hidden>
+    <div class="chip-row" id="filters"></div>
+    <button type="button" class="chip chip-toggle" id="gongfu-filter" aria-pressed="false">Gong fu</button>
+  </nav>
+
+  <main class="page">
+    <div class="notice" id="notice" hidden>
+      Den här sidan är en editor för Standard Notes och väntar på att appen ska ansluta.
+      Installera den med adressen till <code>ext.json</code> under Preferences → Plugins → Install Custom Plugin.
+      <pre class="diag" id="diag"></pre>
+    </div>
+    <div class="locked-banner" id="locked-banner" hidden>Anteckningen är låst.</div>
+
+    <div class="groups" id="groups"></div>
+    <p class="empty" id="empty" hidden></p>
+
+    <div class="add-row">
+      <button type="button" class="add-tea" id="add-tea" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        Nytt te
+      </button>
+    </div>
+  </main>
+
+  <footer class="status" role="status" aria-live="polite">
+    <span id="count">0 teer</span>
+    <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
+  </footer>
+
+  <template id="group-template">
+    <section class="group">
+      <div class="section-head">
+        <h2><span class="dot" aria-hidden="true"></span><span class="g-title"></span></h2>
+      </div>
+      <ul class="teas"></ul>
+    </section>
+  </template>
+
+  <template id="tea-template">
+    <li class="tea">
+      <button type="button" class="summary" aria-expanded="false">
+        <span class="s-main">
+          <span class="s-title"></span>
+          <span class="s-meta"></span>
+        </span>
+        <span class="s-status">
+          <span class="s-temp"></span>
+          <span class="s-gongfu" hidden>Gong fu</span>
+        </span>
+        <svg class="chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+
+      <div class="details" hidden>
+        <div class="field">
+          <span>Sort</span>
+          <input type="text" data-key="sort" aria-label="Sort" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+          <div class="suggest" data-suggest="sort"></div>
+        </div>
+
+        <label class="field">
+          <span>Namn</span>
+          <input type="text" data-key="namn" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+        </label>
+
+        <div class="field">
+          <span>Temperatur</span>
+          <div class="temp-row">
+            <input type="text" data-key="temperatur" aria-label="Temperatur i grader" autocomplete="off" enterkeyhint="next">
+            <span class="unit" aria-hidden="true">°C</span>
+          </div>
+          <div class="suggest" data-suggest="temperatur"></div>
+        </div>
+
+        <div class="field">
+          <span>Land</span>
+          <input type="text" data-key="land" aria-label="Land" autocomplete="off" autocapitalize="sentences" enterkeyhint="done">
+          <div class="suggest" data-suggest="land"></div>
+        </div>
+
+        <label class="toggle">
+          <input type="checkbox" class="check gongfu-check">
+          <span>Passar för gong fu</span>
+        </label>
+
+        <table class="brew" hidden>
+          <caption>Gong fu</caption>
+          <tbody>
+            <tr class="rinse"><th scope="row">First rinse <span class="brew-note">(pouring away)</span></th><td>5–10 sec</td></tr>
+            <tr><th scope="row">Infusion 1</th><td>10–15 sec</td></tr>
+            <tr><th scope="row">Infusion 2</th><td>5–10 sec</td></tr>
+            <tr><th scope="row">Infusion 3</th><td>10–15 sec</td></tr>
+            <tr><th scope="row">Infusion 4</th><td>15–20 sec</td></tr>
+            <tr><th scope="row">Infusion 5</th><td>20–30 sec</td></tr>
+            <tr><th scope="row">Infusion 6+</th><td>+10 sec per extra infusion</td></tr>
+          </tbody>
+        </table>
+
+        <div class="d-actions">
+          <button type="button" class="link-btn" data-action="collapse">Klar</button>
+          <button type="button" class="link-btn danger" data-action="remove">Ta bort te</button>
+        </div>
+      </div>
+    </li>
+  </template>
+
+  <script src="vendor/component-relay.js?v=1.0.0"></script>
+  <script src="te.js?v=1.0.0"></script>
+</body>
+</html>
