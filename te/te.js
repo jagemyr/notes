@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.7.1';
+  var VERSION = '1.7.2';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -417,6 +417,9 @@
   }
 
   // ---------- Anslutning ----------
+
+  // Versionen längst ner till höger, så att man ser vilken version varje enhet kör.
+  document.getElementById('version').textContent = 'v' + VERSION;
 
   var relay = new ComponentRelay({
     targetWindow: window,

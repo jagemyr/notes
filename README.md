@@ -191,6 +191,7 @@ för om det **behöver fyllas på** och om det **passar för gong fu**.
   sökningen. Filtren sparas per enhet. Med ett filter valt får ett nytt te den sorten (och gong fu eller fyll på).
 - Enter hoppar till nästa fält i samma te.
 - Anteckningslistan i Standard Notes visar till exempel *9 teer, 6 för gong fu, 2 att fylla på: 3 oolong, 2 grönt, …*.
+- Längst ner till höger står vilken version av pluginet som körs på enheten, t.ex. *v1.7.2*.
 
 Allt sparas som vanlig text i anteckningen, ett block per te med en tom rad emellan, så det går att läsa även i
 andra editorer:
@@ -277,6 +278,9 @@ Ett plugin som inte passar någon annan typ får `unknown`.
 ## Uppdatera ett plugin
 
 Höj `version` i pluginets `ext.json` och `?v=` i `url` och i `index.html` när något ändras, så att appen inte visar cachade filer. Standard Notes läser `latest_url` och hämtar nya versioner.
+
+Te visar sin version längst ner till höger (t.ex. *v1.7.2*). Den kommer från `VERSION` i `te.js`, alltså koden som
+faktiskt körs, så höj den också. Visar en enhet en äldre version än `ext.json`: stäng anteckningen och öppna den igen.
 
 ## Licens
 
