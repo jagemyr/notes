@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.9.0';
+  var VERSION = '1.9.1';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -1064,6 +1064,8 @@
     var editing = expanded && state.editing && canEdit;
     card.classList.toggle('editing', editing);
     card.querySelector('.edit-fields').hidden = !editing;
+    // Gong fu ändras sällan och hör till Ändra; Fyll på kan man bocka i direkt.
+    card.querySelector('.toggle-gongfu').hidden = !editing;
     card.querySelector('[data-action="edit"]').hidden = !canEdit || editing;
 
     var remove = card.querySelector('[data-action="remove"]');

@@ -147,9 +147,11 @@ för om det **behöver fyllas på** och om det **passar för gong fu**.
   som kant till vänster på raden.
 - Raden visar namn, land och butik, ett grönt märke **Gong fu** och ett orange märke **Fyll på** när de är ibockade,
   smaken på en egen rad under, och till höger temperatur och bryggtid.
-- Tryck på ett te för att fälla ut det. Det visas först utan fält: timerknapparna, bockarna och gong fu-schemat.
-  **Ändra** tar fram fälten, valknapparna och *Ta bort te*, så att ett tryck när man scrollar inte byter sort av
-  misstag. Ett nytt te öppnas direkt för ändring. **Klar** fäller ihop det. Medan teet är utfällt står det kvar
+  I listan kortas långa rader av med *…*; när teet är utfällt radbryts namn, land, butik och smak, så att hela
+  smakprofilen syns utan *Ändra* även på en smal skärm.
+- Tryck på ett te för att fälla ut det. Det visas först utan fält: timerknapparna, bocken *Behöver fyllas på* och
+  gong fu-schemat. **Ändra** tar fram fälten, valknapparna, bocken *Passar för gong fu* och *Ta bort te*, så att ett
+  tryck när man scrollar inte byter sort av misstag. Ett nytt te öppnas direkt för ändring. **Klar** fäller ihop det. Medan teet är utfällt står det kvar
   på sin plats även om man byter sort eller namn; det flyttas till rätt grupp när det fälls ihop.
 - **Spärr vid scroll:** ett tryck på en valknapp, en bock, *Ändra* eller *Ta bort te* inom 0,4 sekunder efter att
   man har scrollat med fingret (även medan sidan glider vidare) räknas inte. Det är ofta ett tryck för att stoppa

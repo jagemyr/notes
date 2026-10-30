@@ -314,6 +314,24 @@ button, input { font: inherit; color: inherit; }
 /* Märkena står kvar när landet är långt; landet kortas av i stället. */
 .s-sub .s-meta { flex: 0 1 auto; }
 
+/*
+ * Utfällt te: namn, land, butik och smak radbryts i stället för att kortas av med "…", så att
+ * hela smakprofilen syns utan Ändra även på en smal skärm. Ihopfällt får de en rad var.
+ */
+.tea.expanded .s-title,
+.tea.expanded .s-meta,
+.tea.expanded .s-taste {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.tea.expanded .s-sub {
+  flex-wrap: wrap;
+  row-gap: 3px;
+}
+
 /* Filterknappen Fyll på blir orange när den är vald. */
 .chip-refill[aria-pressed="true"] {
   border-color: var(--refill);
