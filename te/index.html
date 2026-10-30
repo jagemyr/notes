@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Te (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=1.8.2">
+  <link rel="stylesheet" href="te.css?v=1.9.0">
 </head>
 <body>
   <nav class="filters" id="filters-bar" aria-label="Sök och filtrera teer" hidden>
@@ -86,51 +86,54 @@
           <button type="button" class="timer-btn" data-action="timer-western" hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg><span class="timer-btn-label"></span></button>
         </div>
 
-        <div class="field">
-          <span>Sort</span>
-          <input type="text" data-key="sort" aria-label="Sort" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
-          <div class="suggest" data-suggest="sort"></div>
-        </div>
-
-        <label class="field">
-          <span>Namn</span>
-          <input type="text" data-key="namn" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
-        </label>
-
-        <div class="field">
-          <span>Temperatur</span>
-          <div class="temp-row">
-            <input type="text" data-key="temperatur" aria-label="Temperatur i grader" autocomplete="off" enterkeyhint="next">
-            <span class="unit" aria-hidden="true">°C</span>
+        <!-- Fälten och valknapparna syns bara efter Ändra, så att ett tryck när man scrollar inte byter sort. -->
+        <div class="edit-fields" hidden>
+          <div class="field">
+            <span>Sort</span>
+            <input type="text" data-key="sort" aria-label="Sort" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+            <div class="suggest" data-suggest="sort"></div>
           </div>
-          <div class="suggest" data-suggest="temperatur"></div>
-        </div>
 
-        <div class="field">
-          <span>Bryggtid</span>
-          <div class="temp-row">
-            <input type="text" data-key="bryggtid" aria-label="Bryggtid i minuter, vanlig bryggning" autocomplete="off" enterkeyhint="next">
-            <span class="unit" aria-hidden="true">min</span>
+          <label class="field">
+            <span>Namn</span>
+            <input type="text" data-key="namn" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+          </label>
+
+          <div class="field">
+            <span>Temperatur</span>
+            <div class="temp-row">
+              <input type="text" data-key="temperatur" aria-label="Temperatur i grader" autocomplete="off" enterkeyhint="next">
+              <span class="unit" aria-hidden="true">°C</span>
+            </div>
+            <div class="suggest" data-suggest="temperatur"></div>
           </div>
-          <div class="suggest" data-suggest="bryggtid"></div>
-        </div>
 
-        <div class="field">
-          <span>Land</span>
-          <input type="text" data-key="land" aria-label="Land" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
-          <div class="suggest" data-suggest="land"></div>
-        </div>
+          <div class="field">
+            <span>Bryggtid</span>
+            <div class="temp-row">
+              <input type="text" data-key="bryggtid" aria-label="Bryggtid i minuter, vanlig bryggning" autocomplete="off" enterkeyhint="next">
+              <span class="unit" aria-hidden="true">min</span>
+            </div>
+            <div class="suggest" data-suggest="bryggtid"></div>
+          </div>
 
-        <div class="field">
-          <span>Butik</span>
-          <input type="text" data-key="butik" aria-label="Butik" placeholder="Var du köpte teet" autocomplete="off" autocapitalize="words" enterkeyhint="next">
-          <div class="suggest" data-suggest="butik"></div>
-        </div>
+          <div class="field">
+            <span>Land</span>
+            <input type="text" data-key="land" aria-label="Land" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+            <div class="suggest" data-suggest="land"></div>
+          </div>
 
-        <div class="field">
-          <span>Smak</span>
-          <input type="text" data-key="smak" aria-label="Smak" placeholder="t.ex. honung, persika" autocomplete="off" autocapitalize="none" enterkeyhint="done">
-          <div class="suggest" data-suggest="smak"></div>
+          <div class="field">
+            <span>Butik</span>
+            <input type="text" data-key="butik" aria-label="Butik" placeholder="Var du köpte teet" autocomplete="off" autocapitalize="words" enterkeyhint="next">
+            <div class="suggest" data-suggest="butik"></div>
+          </div>
+
+          <div class="field">
+            <span>Smak</span>
+            <input type="text" data-key="smak" aria-label="Smak" placeholder="t.ex. honung, persika" autocomplete="off" autocapitalize="none" enterkeyhint="done">
+            <div class="suggest" data-suggest="smak"></div>
+          </div>
         </div>
 
         <div class="toggles">
@@ -153,6 +156,10 @@
 
         <div class="d-actions">
           <button type="button" class="link-btn" data-action="collapse">Klar</button>
+          <button type="button" class="link-btn edit-btn" data-action="edit" hidden>
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+            Ändra
+          </button>
           <button type="button" class="link-btn danger" data-action="remove">Ta bort te</button>
         </div>
       </div>
@@ -206,7 +213,7 @@
     </div>
   </div>
 
-  <script src="vendor/component-relay.js?v=1.8.2"></script>
-  <script src="te.js?v=1.8.2"></script>
+  <script src="vendor/component-relay.js?v=1.9.0"></script>
+  <script src="te.js?v=1.9.0"></script>
 </body>
 </html>

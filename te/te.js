@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.8.2';
+  var VERSION = '1.9.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -130,6 +130,9 @@
     teas: [],
     rest: '',
     expanded: -1,
+    // Det utfällda teet visas först utan fält och valknappar; Ändra tar fram dem. Då byter
+    // ett tryck när man scrollar inte sort av misstag. Ett nytt te öppnas direkt för ändring.
+    editing: false,
     // Sort och namn för det utfällda teet när det fälldes ut. Kortet står kvar på sin plats
     // medan man skriver och flyttas till rätt grupp när det fälls ihop.
     frozen: null,
@@ -473,6 +476,7 @@
         if (!state.teas.some(hasContent)) {
           if (!state.teas.length) state.teas.push(emptyTea());
           expand(0);
+          state.editing = true;
         }
         textChanged = true;
       }
@@ -595,6 +599,13 @@
     var tea = state.teas[index];
     var card = cardFor(index);
 
+    if (action === 'edit') {
+      state.editing = true;
+      resetConfirm();
+      render();
+      return;
+    }
+
     if (button.hasAttribute('data-value')) {
       var key = button.closest('[data-suggest]').getAttribute('data-suggest');
       var chosen = button.getAttribute('data-value');
@@ -611,6 +622,30 @@
       removeTea(index);
     }
   });
+
+  // Ett tryck direkt efter en scroll (t.ex. för att stoppa den) räknas inte som ett val:
+  // valknappar, bockar, Ändra och Ta bort ignorerar tryck inom SCROLL_GUARD_MS efter scroll.
+  // Bara scroll som ett dragande finger har satt igång räknas, även när sidan glider vidare
+  // efteråt. Ett vanligt tryck (utan att dra) räknas inte, och inte heller appens egen scroll
+  // (t.ex. fram till ett utfällt te), så att Ändra inte spärras direkt efter att man fällt ut.
+  var SCROLL_GUARD_MS = 400;
+  var TOUCH_SCROLL_MS = 3000;
+  var OWN_SCROLL_MS = 500;
+  var lastScroll = 0;
+  var lastDrag = 0;
+  var ownScrollUntil = 0;
+  el.page.addEventListener('touchmove', function () { lastDrag = Date.now(); }, { passive: true });
+  el.page.addEventListener('scroll', function () {
+    var now = Date.now();
+    if (now < ownScrollUntil) return;
+    if (now - lastDrag < TOUCH_SCROLL_MS) lastScroll = now;
+  }, { passive: true });
+  el.page.addEventListener('click', function (event) {
+    if (Date.now() - lastScroll > SCROLL_GUARD_MS) return;
+    if (!event.target.closest('.suggest, .toggle, [data-action="edit"], [data-action="remove"]')) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
 
   // Enter hoppar till nästa fält i samma te (ingen <form>, se README).
   el.page.addEventListener('keydown', function (event) {
@@ -644,6 +679,7 @@
       tea.prefill = TEXT_KEYS.every(function (key) { return key === 'sort' || !oneLine(tea.values[key]); });
     }
     expand(index);
+    state.editing = true;
     resetConfirm();
     render();
     var card = cardFor(index);
@@ -770,6 +806,7 @@
   function expand(index) {
     var tea = state.teas[index];
     state.expanded = index;
+    state.editing = false;
     state.frozen = { sort: tea.values.sort, namn: tea.values.namn };
   }
 
@@ -781,6 +818,7 @@
       if (state.confirmIndex === state.expanded) resetConfirm();
     }
     state.expanded = -1;
+    state.editing = false;
     state.frozen = null;
   }
 
@@ -836,6 +874,8 @@
 
   function scrollIntoView(node) {
     if (!node) return;
+    // Appens egen scroll ska inte spärra tryck (se spärren mot tryck efter scroll).
+    ownScrollUntil = Date.now() + OWN_SCROLL_MS;
     try { node.scrollIntoView({ block: 'nearest' }); } catch (e) { node.scrollIntoView(false); }
   }
 
@@ -1020,9 +1060,15 @@
 
     renderSuggestions(card, tea, canEdit);
 
+    // Visa eller ändra: fälten, valknapparna och Ta bort te bara när man ändrar.
+    var editing = expanded && state.editing && canEdit;
+    card.classList.toggle('editing', editing);
+    card.querySelector('.edit-fields').hidden = !editing;
+    card.querySelector('[data-action="edit"]').hidden = !canEdit || editing;
+
     var remove = card.querySelector('[data-action="remove"]');
     var confirming = state.confirmIndex === index;
-    remove.hidden = !canEdit;
+    remove.hidden = !editing;
     remove.textContent = confirming ? 'Tryck igen för att ta bort' : 'Ta bort te';
     remove.classList.toggle('confirm', confirming);
   }
