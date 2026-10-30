@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.7.3';
+  var VERSION = '1.7.4';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -1222,6 +1222,7 @@
   // ohörbar ton håller ljudsystemet igång medan timern går; annars kan telefonen frysa dess
   // klocka när skärmen är släckt, och då spelas inget. Hinner ljudklockan ändå inte fram
   // piper timern direkt när tick kommer (reserv), så att pipet aldrig uteblir helt.
+  // På iPhone spelas dessutom en tyst ljudfil, annars tystar ljudlöst läge allt.
   // Inget av detta sparas i anteckningen.
 
   var SOUND_KEY = 'se.jagemyr.te.ljud';
@@ -1252,6 +1253,10 @@
   var wakeLock = null;
   var signalCount = 0;
   var soundOn = loadPref(SOUND_KEY) !== '0';
+  // iPhone och iPad (iPadOS säger att den är en Mac men har pekskärm).
+  var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var silentEl = null;
 
   function openTimer(tea, kind, index) {
     var western = parseBrewTime(tea.values.bryggtid);
@@ -1301,6 +1306,7 @@
     clearInterval(tickHandle);
     tickHandle = null;
     releaseWakeLock();
+    stopSilent();
     tm.root.hidden = true;
     document.body.classList.remove('timer-open');
     if (opener && document.body.contains(opener) && opener.focus) opener.focus();
@@ -1505,6 +1511,11 @@
   // ---------- Signal: ljud, vibration och en blink ----------
 
   function unlockAudio() {
+    // iPhone: ljud från Web Audio räknas annars som "omgivningsljud" och tystas helt när
+    // telefonen står på ljudlöst. Säg att vi spelar ljud på riktigt (nyare iOS) ...
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+    } catch (e) { /* stöds inte */ }
     try {
       var Ctx = window.AudioContext || window.webkitAudioContext;
       if (!audio && Ctx) audio = new Ctx();
@@ -1512,6 +1523,59 @@
     } catch (e) {
       audio = null;
     }
+    // ... och spela en tyst ljudfil medan timern är öppen (äldre iOS). Ett <audio>-element
+    // byter iOS ljudläge till uppspelning, och då hörs även Web Audio med ljudlöst på.
+    if (IS_IOS) playSilent();
+  }
+
+  /** Den tysta ljudfilen: 0,5 s tystnad som WAV, byggd här så att ingen fil behövs. */
+  function silentWav() {
+    var samples = 4000;
+    var bytes = new Uint8Array(44 + samples);
+    var view = new DataView(bytes.buffer);
+    var text = function (offset, str) {
+      for (var i = 0; i < str.length; i++) bytes[offset + i] = str.charCodeAt(i);
+    };
+    text(0, 'RIFF');
+    view.setUint32(4, 36 + samples, true);
+    text(8, 'WAVE');
+    text(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, 8000, true);
+    view.setUint32(28, 8000, true);
+    view.setUint16(32, 1, true);
+    view.setUint16(34, 8, true);
+    text(36, 'data');
+    view.setUint32(40, samples, true);
+    for (var j = 0; j < samples; j++) bytes[44 + j] = 128;
+    var binary = '';
+    for (var k = 0; k < bytes.length; k++) binary += String.fromCharCode(bytes[k]);
+    return 'data:audio/wav;base64,' + btoa(binary);
+  }
+
+  function playSilent() {
+    if (!soundOn) return;
+    try {
+      if (!silentEl) {
+        silentEl = document.createElement('audio');
+        silentEl.src = silentWav();
+        silentEl.loop = true;
+        silentEl.preload = 'auto';
+        silentEl.setAttribute('playsinline', '');
+        silentEl.setAttribute('x-webkit-airplay', 'deny');
+      }
+      var playing = silentEl.play();
+      if (playing && playing.catch) playing.catch(function () { /* blockerat; försöker igen vid nästa tryck */ });
+      tm.root.setAttribute('data-silent', '1');
+    } catch (e) { /* inget <audio> */ }
+  }
+
+  function stopSilent() {
+    if (!silentEl) return;
+    try { silentEl.pause(); } catch (e) { /* redan pausad */ }
+    tm.root.setAttribute('data-silent', '0');
   }
 
   /** Spelar `times` korta pip med start `delay` sekunder från nu. Returnerar noderna. */
@@ -1684,6 +1748,7 @@
     } else {
       cancelBeeps();
       stopKeepAlive();
+      stopSilent();
     }
     renderTimer();
   });
