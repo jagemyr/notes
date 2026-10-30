@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.10.1';
+  var VERSION = '1.10.2';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
