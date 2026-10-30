@@ -198,8 +198,8 @@ för om det **behöver fyllas på** och om det **passar för gong fu**.
 - Enter hoppar till nästa fält i samma te.
 - Anteckningslistan i Standard Notes visar till exempel *9 teer, 6 för gong fu, 2 att fylla på: 3 oolong, 2 grönt, …*.
 - Längst ner till höger står vilken version av pluginet som körs på enheten, t.ex. *v1.7.2*.
-- **茶** (*chá*, te) står som ett rött sigill i hörnet bredvid *Nytt te* och i timern, penselskrivet i typsnittet
-  Ma Shan Zheng. Pluginet har med sig bara det tecknet ur typsnittet, så det ser likadant ut på alla enheter.
+- **茶** (*chá*, te) står som ett rött sigill högst upp till vänster om sökfältet (som syns när listan har minst
+  två teer) och i timern, penselskrivet i typsnittet Ma Shan Zheng. Pluginet har med sig bara det tecknet ur typsnittet, så det ser likadant ut på alla enheter.
 
 Allt sparas som vanlig text i anteckningen, ett block per te med en tom rad emellan, så det går att läsa även i
 andra editorer:
