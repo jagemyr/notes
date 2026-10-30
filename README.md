@@ -182,6 +182,8 @@ för om det **behöver fyllas på** och om det **passar för gong fu**.
   hoppar mellan steg, klockan stänger av ljudet och Escape stänger timern. Bryggtiden kan skrivas som `3`, `2-3`,
   `1,5` (minuter) eller `30 sek`. Timern sparar inget, fungerar även i en låst anteckning och går bara så länge
   editorn är öppen; skärmen hålls tänd där webbläsaren tillåter det.
+  Pipen bokas in i ljudsystemet redan när timern startar. Med låst skärm saktar telefonen ner JavaScript, men
+  pipen kommer ändå i tid; siffrorna och vibrationen kommer ikapp när skärmen tänds.
 - **Fyll på:** bocka i *Behöver fyllas på* när ett te håller på att ta slut. Filterknappen **Fyll på** visar bara
   de teerna, som en inköpslista, och anteckningslistan i Standard Notes visar hur många som ska fyllas på.
 - **Filter:** knapparna under sökfältet visar alla teer eller en sort i taget. **Gong fu** visar bara teer som passar

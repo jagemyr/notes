@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.7.0';
+  var VERSION = '1.7.1';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -1214,6 +1214,8 @@
   // i intervallet; vid noll är det dags att hälla (ljud och vibration), och sedan räknas
   // sekunderna uppåt: grönt så länge man är inom intervallet, orange efter det. Tiden räknas
   // från klockan och inte från antalet tick, så den stämmer även om webbläsaren saktar ner.
+  // Pipen bokas in i ljudsystemet redan när timern startar: med låst skärm saktar telefonen
+  // ner JavaScript (tick kan komma 20 sekunder sent), men ljudet spelas ändå i tid.
   // Inget av detta sparas i anteckningen.
 
   var SOUND_KEY = 'se.jagemyr.te.ljud';
@@ -1259,6 +1261,10 @@
       running: false,
       firedLo: false,
       firedHi: false,
+      // Pip som redan är inbokade i ljudsystemet för det här steget.
+      booked: [],
+      bookedLo: false,
+      bookedHi: false,
       opener: document.activeElement
     };
     unlockAudio();
@@ -1273,6 +1279,7 @@
   function closeTimer() {
     if (!timer) return;
     var opener = timer.opener;
+    cancelBeeps();
     timer = null;
     clearInterval(tickHandle);
     tickHandle = null;
@@ -1304,6 +1311,7 @@
     unlockAudio();
     timer.running = true;
     timer.startedAt = Date.now();
+    bookBeeps();
     requestWakeLock();
     renderTimer();
   }
@@ -1311,10 +1319,12 @@
   function pauseTimer() {
     timer.elapsed = timerElapsed();
     timer.running = false;
+    cancelBeeps();
     renderTimer();
   }
 
   function goToStep(index, autostart) {
+    cancelBeeps();
     timer.index = timer.kind === 'western' ? 0 : Math.max(0, index);
     timer.elapsed = 0;
     timer.running = false;
@@ -1457,10 +1467,12 @@
     }
   }
 
-  function beep(times, frequency) {
-    if (!soundOn || !audio) return;
+  /** Spelar `times` korta pip med start `delay` sekunder från nu. Returnerar noderna. */
+  function beep(times, frequency, delay) {
+    var nodes = [];
+    if (!soundOn || !audio) return nodes;
     try {
-      var t0 = audio.currentTime + 0.02;
+      var t0 = audio.currentTime + Math.max(0.02, delay || 0);
       for (var i = 0; i < times; i++) {
         var osc = audio.createOscillator();
         var gain = audio.createGain();
@@ -1474,17 +1486,59 @@
         gain.connect(audio.destination);
         osc.start(t);
         osc.stop(t + 0.22);
+        nodes.push({ osc: osc, gain: gain });
       }
     } catch (e) {
       // Inget ljud; blinken och vibrationen räcker.
     }
+    return nodes;
+  }
+
+  /**
+   * Bokar in pipen för steget i ljudsystemet: starkt vid kortaste tiden, svagt vid den
+   * längsta. Då kommer de i tid även när telefonen är låst och JavaScript går långsamt.
+   */
+  function bookBeeps() {
+    cancelBeeps();
+    if (!timer || !timer.running || !soundOn || !audio) return;
+    var step = timerStep(timer.index);
+    var e = timerElapsed();
+    if (!timer.firedLo && e < step.lo) {
+      timer.booked = timer.booked.concat(beep(3, 880, step.lo - e));
+      timer.bookedLo = timer.booked.length > 0;
+    }
+    if (!timer.firedHi && step.hi > step.lo && e < step.hi) {
+      var weak = beep(1, 587, step.hi - e);
+      timer.booked = timer.booked.concat(weak);
+      timer.bookedHi = weak.length > 0;
+    }
+    tm.root.setAttribute('data-booked', String(timer.booked.length));
+  }
+
+  /** Avbokar inbokade pip (vid paus, byte av steg, ljud av och när timern stängs). */
+  function cancelBeeps() {
+    if (!timer) return;
+    timer.booked.forEach(function (node) {
+      try { node.gain.disconnect(); } catch (e) { /* redan frånkopplad */ }
+      try { node.osc.stop(0); } catch (e) { /* redan stoppad */ }
+    });
+    timer.booked = [];
+    timer.bookedLo = false;
+    timer.bookedHi = false;
+    tm.root.setAttribute('data-booked', '0');
   }
 
   /** Stark signal när det är dags att hälla, svag när intervallet är slut. */
   function signal(strong) {
     signalCount++;
     tm.root.setAttribute('data-signals', String(signalCount));
-    beep(strong ? 3 : 1, strong ? 880 : 587);
+    // Pip bara här om det inte redan var inbokat (då har det redan hörts, i tid). Var
+    // ljudsystemet pausat av telefonen hördes det inbokade inte, och då piper vi nu.
+    var booked = timer && (strong ? timer.bookedLo : timer.bookedHi) && audio && audio.state === 'running';
+    if (!booked) {
+      beep(strong ? 3 : 1, strong ? 880 : 587);
+      tm.root.setAttribute('data-live-beeps', String(Number(tm.root.getAttribute('data-live-beeps') || 0) + 1));
+    }
     try {
       if (navigator.vibrate) navigator.vibrate(strong ? [200, 100, 200] : 150);
     } catch (e) { /* ingen vibration */ }
@@ -1523,7 +1577,13 @@
   tm.sound.addEventListener('click', function () {
     soundOn = !soundOn;
     storePref(SOUND_KEY, soundOn ? '' : '0');
-    if (soundOn) { unlockAudio(); beep(1, 880); }
+    if (soundOn) {
+      unlockAudio();
+      beep(1, 880);
+      if (timer && timer.running) bookBeeps();
+    } else {
+      cancelBeeps();
+    }
     renderTimer();
   });
   tm.steps.addEventListener('click', function (event) {
