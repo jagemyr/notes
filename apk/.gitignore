@@ -1,0 +1,6 @@
+# Byggresultat och signeringsnyckel hamnar aldrig i repot.
+build/
+*.apk
+*.jks
+*.keystore
+*.idsig

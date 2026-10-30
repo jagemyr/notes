@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sigillet: 茶 i cinnoberrött, som i appen. Tecknet används även för tematiserade ikoner. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+  <background android:drawable="@color/te_seal" />
+  <foreground android:drawable="@mipmap/ic_launcher_fg" />
+  <monochrome android:drawable="@mipmap/ic_launcher_fg" />
+</adaptive-icon>

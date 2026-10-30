@@ -25,7 +25,14 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.10.2';
+  var VERSION = '1.11.0';
+
+  // Fristående läge: i Te-appen för Android (som ger window.TeNative) eller med ?standalone=1.
+  // Då finns ingen Standard Notes: teerna sparas i appen, och Text-panelen flyttar texten
+  // mellan appen och Standard Notes.
+  var NATIVE = window.TeNative || null;
+  var STANDALONE = Boolean(NATIVE) || /[?&]standalone=1(?:&|$)/.test(location.search);
+  var TEXT_KEY = 'se.jagemyr.te.text';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -114,6 +121,12 @@
     filterRow: document.getElementById('filter-row'),
     chipDivider: document.getElementById('chip-divider'),
     einkToggle: document.getElementById('eink-toggle'),
+    textToggle: document.getElementById('text-toggle'),
+    textPanel: document.getElementById('textpanel'),
+    textArea: document.getElementById('text-area'),
+    textCopy: document.getElementById('text-copy'),
+    textSave: document.getElementById('text-save'),
+    textClose: document.getElementById('text-close'),
     refillFilter: document.getElementById('refill-filter'),
     search: document.getElementById('search'),
     searchClear: document.getElementById('search-clear'),
@@ -187,7 +200,22 @@
     }
   }
 
+  /** Läser och sparar i appen (Android: SharedPreferences). Tomt värde tar bort nyckeln. */
+  function nativeGet(key) {
+    try {
+      var v = NATIVE.load(key);
+      return v === undefined || v === null ? null : String(v);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function nativeSet(key, value) {
+    try { NATIVE.save(key, value ? String(value) : ''); } catch (e) { /* kan inte spara */ }
+  }
+
   function loadPref(key) {
+    if (NATIVE) return nativeGet(key);
     var local = null;
     try { local = window.localStorage.getItem(key); } catch (e) { /* ingen lagring */ }
     if (local !== null) return local;
@@ -196,6 +224,10 @@
   }
 
   function storePref(key, value) {
+    if (NATIVE) {
+      nativeSet(key, value);
+      return;
+    }
     try {
       if (value) window.localStorage.setItem(key, value); else window.localStorage.removeItem(key);
     } catch (e) {
@@ -515,7 +547,7 @@
     applyEink(on);
   });
 
-  var relay = new ComponentRelay({
+  var relay = STANDALONE ? null : new ComponentRelay({
     targetWindow: window,
     options: { coallesedSaving: true, coallesedSavingDelay: 250 },
     onReady: function () {
@@ -529,7 +561,7 @@
   });
 
   setTimeout(function () {
-    if (!state.connected) {
+    if (!state.connected && !STANDALONE) {
       el.notice.hidden = false;
       document.getElementById('diag').textContent = diagText();
       setSaveState('Ej ansluten', 'error');
@@ -538,7 +570,9 @@
 
   // ---------- Från Standard Notes ----------
 
-  relay.streamContextItem(function (note) {
+  if (relay) relay.streamContextItem(onNote);
+
+  function onNote(note) {
     var isNewNote = !state.note || state.note.uuid !== note.uuid;
     var wasLocked = state.locked;
     state.note = note;
@@ -580,7 +614,7 @@
       render();
       if (isNewNote) el.page.scrollTop = 0;
     }
-  });
+  }
 
   function isLocked(note) {
     // Egen uppslagning: relayens getItemAppDataValue kraschar om domänen saknas i appData.
@@ -599,6 +633,12 @@
     if (!editable()) return;
     var note = state.note;
     var text = serialize(state.teas, state.rest);
+    if (STANDALONE) {
+      note.content.text = text;
+      storeText(text);
+      setSaveState('Sparat', 'saved');
+      return;
+    }
     var previewText = preview(state.teas);
     setSaveState('Sparar…', '');
     relay.saveItemWithPresave(note, function () {
@@ -1353,6 +1393,130 @@
     el.saveState.className = 'save-state' + (kind ? ' ' + kind : '');
   }
 
+  // ---------- Fristående läge ----------
+
+  function loadText() {
+    if (NATIVE) return nativeGet(TEXT_KEY) || '';
+    try { return window.localStorage.getItem(TEXT_KEY) || ''; } catch (e) { return ''; }
+  }
+
+  function storeText(text) {
+    if (NATIVE) {
+      nativeSet(TEXT_KEY, text);
+      return;
+    }
+    try { window.localStorage.setItem(TEXT_KEY, text); } catch (e) { setSaveState('Kan inte spara', 'error'); }
+  }
+
+  /** Appen håller skärmen tänd medan timern är öppen (finns bara i Te-appen). */
+  function nativeKeepScreenOn(on) {
+    try { if (NATIVE && NATIVE.keepScreenOn) NATIVE.keepScreenOn(Boolean(on)); } catch (e) { /* stöds inte */ }
+  }
+
+  function startStandalone() {
+    state.connected = true;
+    document.documentElement.classList.add('standalone');
+    el.textToggle.hidden = false;
+    setSaveState('', '');
+    reloadPrefs();
+    onNote({ uuid: 'standalone', content: { text: loadText(), appData: {} } });
+  }
+
+  // Text-panelen: hela listan som text, för att flytta den mellan appen och Standard Notes.
+  function openTextPanel() {
+    var any = state.teas.some(hasContent) || state.rest;
+    el.textArea.value = any ? serialize(state.teas, state.rest) : '';
+    el.textCopy.textContent = 'Kopiera allt';
+    el.textPanel.hidden = false;
+    document.body.classList.add('timer-open');
+  }
+
+  function closeTextPanel() {
+    el.textPanel.hidden = true;
+    document.body.classList.remove('timer-open');
+    el.textToggle.focus();
+  }
+
+  /** Ersätter hela listan med texten i panelen. */
+  function applyText(text) {
+    var parsed = parse(text);
+    state.teas = parsed.teas;
+    state.rest = parsed.rest;
+    state.expanded = -1;
+    state.frozen = null;
+    state.editing = false;
+    if (!state.teas.some(hasContent)) {
+      if (!state.teas.length) state.teas.push(emptyTea());
+      expand(0);
+      state.editing = true;
+    }
+    resetConfirm();
+    render();
+    save();
+    el.page.scrollTop = 0;
+  }
+
+  function copyText(text) {
+    try {
+      if (NATIVE && NATIVE.copy) {
+        NATIVE.copy(text);
+        return true;
+      }
+    } catch (e) { /* försök på annat sätt */ }
+    try {
+      el.textArea.focus();
+      el.textArea.select();
+      if (document.execCommand('copy')) return true;
+    } catch (e) { /* försök på annat sätt */ }
+    try {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) { /* går inte */ }
+    return false;
+  }
+
+  el.textToggle.addEventListener('click', openTextPanel);
+  el.textClose.addEventListener('click', closeTextPanel);
+  el.textSave.addEventListener('click', function () {
+    applyText(el.textArea.value);
+    closeTextPanel();
+  });
+  el.textCopy.addEventListener('click', function () {
+    el.textCopy.textContent = copyText(el.textArea.value) ? 'Kopierat' : 'Markera och kopiera själv';
+  });
+  el.textPanel.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeTextPanel();
+    }
+  });
+
+  /**
+   * Androids tillbakaknapp (anropas av appen): stäng timern eller Text-panelen, töm sökningen
+   * eller fäll ihop teet. Returnerar false när det inte finns något att stänga (då avslutas appen).
+   */
+  window.teBack = function () {
+    if (timer) {
+      closeTimer();
+      return true;
+    }
+    if (!el.textPanel.hidden) {
+      closeTextPanel();
+      return true;
+    }
+    if (state.expanded >= 0) {
+      collapseAndShow(state.expanded);
+      return true;
+    }
+    if (state.search) {
+      clearSearch();
+      return true;
+    }
+    return false;
+  };
+
   // ---------- Timer ----------
   //
   // Gong fu: stegar genom schemat (sköljning, infusion 1–5, sedan +10 s per infusion).
@@ -1438,6 +1602,7 @@
     unlockAudio();
     tm.root.hidden = false;
     document.body.classList.add('timer-open');
+    nativeKeepScreenOn(true);
     clearInterval(tickHandle);
     tickHandle = setInterval(timerTick, TICK_MS);
     renderTimer();
@@ -1454,6 +1619,7 @@
     tickHandle = null;
     releaseWakeLock();
     stopSilent();
+    nativeKeepScreenOn(false);
     tm.root.hidden = true;
     document.body.classList.remove('timer-open');
     if (opener && document.body.contains(opener) && opener.focus) opener.focus();
@@ -1923,4 +2089,6 @@
       goToStep(timer.index - 1, false);
     }
   });
+
+  if (STANDALONE) startStandalone();
 })();

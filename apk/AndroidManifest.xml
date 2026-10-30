@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Te som fristående Android-app: en WebView som visar samma Te-app som i Standard Notes
+  (te/ i repot), med listan sparad i telefonen. Ingen internetbehörighet: allt ligger i appen.
+  versionCode och versionName sätts av build.sh från VERSION i te/te.js.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="se.jagemyr.te">
+
+  <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="34" />
+
+  <application
+      android:label="Te"
+      android:icon="@mipmap/ic_launcher"
+      android:theme="@style/TeTheme"
+      android:allowBackup="true"
+      android:supportsRtl="false">
+
+    <activity
+        android:name=".MainActivity"
+        android:exported="true"
+        android:launchMode="singleTask"
+        android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation"
+        android:windowSoftInputMode="adjustResize">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>

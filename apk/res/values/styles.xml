@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Vit bakgrund redan innan sidan laddats, utan titelrad. -->
+  <style name="TeTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+    <item name="android:windowBackground">@color/te_bg</item>
+    <item name="android:colorPrimary">@color/te_seal</item>
+    <item name="android:colorPrimaryDark">@color/te_bg</item>
+    <item name="android:colorAccent">@color/te_accent</item>
+    <item name="android:statusBarColor">@color/te_bg</item>
+    <item name="android:navigationBarColor">@color/te_bar</item>
+    <item name="android:windowLightStatusBar">true</item>
+  </style>
+</resources>

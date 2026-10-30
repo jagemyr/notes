@@ -247,6 +247,27 @@ namn känns igen (t.ex. `Typ`, `Te`, `Temp`, `Dragtid`, `Ursprung`, `Köpt i`, `
 Teer utan något ifyllt sparas inte. Rader som inte är fält ligger kvar oförändrade, i sitt te om de står i ett
 block med fält, annars sist.
 
+### Te som Android-app
+
+Te finns också som en fristående Android-app (mappen `apk/`), för telefoner utan Standard Notes eller när man
+vill ha teerna ett tryck bort. Appen är samma Te som pluginet, inbyggd i en WebView, men listan sparas i
+telefonen i stället för i en anteckning. Den behöver ingen internetbehörighet.
+
+- **Text** i statusraden visar hela listan som text. Klistra in texten från teanteckningen i Standard Notes och
+  tryck **Spara** (det ersätter hela listan i appen), eller tryck **Kopiera allt** och klistra in i anteckningen.
+  Texten från en Te-anteckning hämtas enklast genom att byta editor till Plain Text en stund och kopiera allt.
+- Listan och inställningarna sparas direkt i appen och finns kvar efter omstart.
+- Medan timern är öppen hålls skärmen tänd.
+- **Tillbaka** stänger timern eller Text-panelen, fäller ihop teet eller tömmer sökningen, och stänger annars appen.
+- Versionen är densamma som pluginets (t.ex. *v1.11.0*), eftersom appen byggs från `te/`.
+
+Samma sidor går att prova i en webbläsare med `te/index.html?standalone=1` (då sparas listan i localStorage).
+
+**Bygga:** `apk/build.sh` bygger och signerar APK:n med Ubuntus paket (`android-sdk-platform-23`, `aapt`,
+`dalvik-exchange`, `zipalign`, `apksigner` och en JDK), utan Gradle. Hur nyckeln skapas och anges står överst i
+skriptet. Varje uppdatering måste signeras med samma nyckel, annars går den inte att installera över den gamla
+appen (och listan i appen följer inte med). Nyckeln läggs aldrig i repot.
+
 ## Installera
 
 1. Öppna Standard Notes → **Preferences → Plugins**.
@@ -281,6 +302,12 @@ notes/
 │   │   ├── cha.woff2      Tecknet 茶 ur Ma Shan Zheng (bara det tecknet, 1,2 kB)
 │   │   └── OFL.txt        Typsnittets licens
 │   └── vendor/
+├── apk/                   Te som Android-app (se Te som Android-app)
+│   ├── AndroidManifest.xml
+│   ├── src/…/MainActivity.java   WebView med bryggan TeNative (sparar i telefonen)
+│   ├── res/               Ikonen (sigillet) och temat
+│   ├── make_icons.py      Ritar ikonen ur te/fonts/cha.woff2
+│   └── build.sh           Bygger och signerar APK:n utan Gradle
 └── test-editor/
     ├── ext.json           Beskrivningsfilen som Standard Notes läser
     ├── index.html         Själva editorn

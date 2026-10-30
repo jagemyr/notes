@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Samma färger som i te/te.css. -->
+  <color name="te_bg">#ffffff</color>
+  <color name="te_bar">#f7f7f9</color>
+  <color name="te_accent">#086dd6</color>
+  <color name="te_seal">#b3322b</color>
+</resources>

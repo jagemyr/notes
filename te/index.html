@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Te (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=1.10.2">
+  <link rel="stylesheet" href="te.css?v=1.11.0">
 </head>
 <body>
   <nav class="filters" id="filters-bar" aria-label="Sök och filtrera teer" hidden>
@@ -50,6 +50,7 @@
     <span id="count">0 teer</span>
     <span class="status-right">
       <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
+      <button type="button" class="pill-btn" id="text-toggle" title="Hela listan som text: klistra in från eller kopiera till Standard Notes" hidden>Text</button>
       <button type="button" class="eink-toggle" id="eink-toggle" aria-pressed="false" title="E-ink-läge: svart och vitt, för e-ink-skärmar">
         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg>
         E-ink
@@ -172,6 +173,22 @@
     </li>
   </template>
 
+  <!-- Text-panelen (bara i den fristående appen): hela listan som text, in och ut. -->
+  <div class="textpanel" id="textpanel" role="dialog" aria-modal="true" aria-labelledby="textpanel-title" hidden>
+    <div class="textpanel-head">
+      <h2 id="textpanel-title">Listan som text</h2>
+      <button type="button" class="timer-icon" id="text-close" aria-label="Stäng">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <p class="textpanel-hint">Klistra in texten från teanteckningen i Standard Notes och tryck <b>Spara</b>, eller kopiera härifrån och klistra in där. Spara ersätter hela listan i appen.</p>
+    <textarea id="text-area" spellcheck="false" autocapitalize="none" autocomplete="off" aria-label="Listan som text"></textarea>
+    <div class="textpanel-actions">
+      <button type="button" class="link-btn" id="text-copy">Kopiera allt</button>
+      <button type="button" class="timer-main textpanel-save" id="text-save">Spara</button>
+    </div>
+  </div>
+
   <!-- Bryggtimern. Fylls i och styrs av te.js; sparar inget i anteckningen. -->
   <div class="timer" id="timer" role="dialog" aria-modal="true" aria-labelledby="timer-tea" tabindex="-1" hidden>
     <div class="timer-head">
@@ -219,7 +236,7 @@
     </div>
   </div>
 
-  <script src="vendor/component-relay.js?v=1.10.2"></script>
-  <script src="te.js?v=1.10.2"></script>
+  <script src="vendor/component-relay.js?v=1.11.0"></script>
+  <script src="te.js?v=1.11.0"></script>
 </body>
 </html>
