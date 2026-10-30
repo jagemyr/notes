@@ -188,8 +188,8 @@ för om det **behöver fyllas på** och om det **passar för gong fu**.
   fort JavaScript hinner fram. Siffrorna och vibrationen kommer ikapp när skärmen tänds.
   **iPhone:** iOS tystar Web Audio helt när telefonen står på ljudlöst. Timern begär därför uppspelningsläge
   (`navigator.audioSession`) och spelar en tyst, inbyggd WAV-fil i ett `<audio>`-element medan den är öppen, så
-  att pipen hörs även på ljudlöst. Med låst skärm pausar iOS hela Standard Notes, så på iPhone hörs pipen bara
-  med skärmen tänd (ställ in en längre Autolås medan du brygger).
+  att pipen hörs även på ljudlöst. Ljudfilen håller också ljudet igång med låst skärm, så pipen kommer i tid
+  även då (provat med 1.7.4 på iPhone och Android 16).
 - **Fyll på:** bocka i *Behöver fyllas på* när ett te håller på att ta slut. Filterknappen **Fyll på** visar bara
   de teerna, som en inköpslista, och anteckningslistan i Standard Notes visar hur många som ska fyllas på.
 - **Filter:** knapparna under sökfältet visar alla teer eller en sort i taget. **Gong fu** visar bara teer som passar
