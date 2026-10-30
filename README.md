@@ -205,10 +205,13 @@ för om det **behöver fyllas på** och om det **passar för gong fu**.
 - Enter hoppar till nästa fält i samma te.
 - Anteckningslistan i Standard Notes visar till exempel *9 teer, 6 för gong fu, 2 att fylla på: 3 oolong, 2 grönt, …*.
 - Längst ner till höger står vilken version av pluginet som körs på enheten, t.ex. *v1.7.2*.
-- **E-ink-läge:** knappen med en halvfylld cirkel bredvid versionen gör appen svartvit för e-ink-skärmar (t.ex.
+- **E-ink-läge:** knappen **E-ink** bredvid versionen gör appen svartvit för e-ink-skärmar (t.ex.
   Mudita Kompakt): svarta kanter i stället för ljusgrå, valda knappar i svart med vit text, *Gong fu* med ram och
   *Fyll på* inverterat, inga sortfärger, svart sigill och inga animationer (de ger spökbilder). Valet sparas per
-  enhet. Utan val slås det på av sig självt om skärmen säger att den är svartvit.
+  enhet. Utan val slås det på av sig självt på Mudita-telefoner och om skärmen säger att den är svartvit.
+- **Inställningar per enhet** (filter, Gong fu, Fyll på, ljud och e-ink) sparas i localStorage och dessutom i
+  pluginets data i Standard Notes, under en nyckel för enheten (modell och skärmstorlek). I Standard Notes på
+  telefonen töms pluginets localStorage varje gång anteckningen öppnas; då läses valen därifrån i stället.
 - **Smal skärm** (under 400 px): mindre marginaler och ingen pil till höger på raderna, så att texten får plats.
 - **茶** (*chá*, te) står som ett rött sigill högst upp till vänster om sökfältet (som syns när listan har minst
   två teer) och i timern, penselskrivet i typsnittet Ma Shan Zheng. Pluginet har med sig bara det tecknet ur typsnittet, så det ser likadant ut på alla enheter.

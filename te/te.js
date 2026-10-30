@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.10.0';
+  var VERSION = '1.10.1';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -152,16 +152,78 @@
     sentTexts: []
   };
 
+  // ---------- Inställningar per enhet ----------
+  //
+  // Filter, Gong fu, Fyll på, ljud och e-ink sparas per enhet. I Standard Notes på telefonen
+  // kan pluginets localStorage tömmas varje gång anteckningen öppnas, så de sparas också i
+  // pluginets data i Standard Notes (som följer med när pluginet laddas), under en nyckel för
+  // just den här enheten. Då påverkar ett val på telefonen inte datorn, och tvärtom.
+
+  var PREFS_KEY = 'devicePrefs';
+  var DEVICE = deviceKey();
+
+  /** "Linux; Android 14; Kompakt; wv 480x800": modell och skärm, utan versionsnummer. */
+  function deviceKey() {
+    var ua = navigator.userAgent || '';
+    var m = /\(([^)]*)\)/.exec(ua);
+    var model = (m ? m[1] : ua.slice(0, 80))
+      .replace(/Build\/[^;)]*/g, '')
+      .replace(/\d+(?:[._]\d+)+/g, '')
+      .replace(/\s*;\s*/g, '; ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    var w = 0, h = 0;
+    try { w = Math.min(screen.width, screen.height); h = Math.max(screen.width, screen.height); } catch (e) { /* okänt */ }
+    return model + ' ' + w + 'x' + h;
+  }
+
+  /** Den här enhetens inställningar i pluginets data i Standard Notes (före anslutning: inga). */
+  function devicePrefs() {
+    try {
+      var all = relay && relay.getComponentDataValueForKey(PREFS_KEY);
+      return (all && all[DEVICE]) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
   function loadPref(key) {
-    try { return window.localStorage.getItem(key); } catch (e) { return null; }
+    var local = null;
+    try { local = window.localStorage.getItem(key); } catch (e) { /* ingen lagring */ }
+    if (local !== null) return local;
+    var saved = devicePrefs()[key];
+    return saved === undefined ? null : saved;
   }
 
   function storePref(key, value) {
     try {
       if (value) window.localStorage.setItem(key, value); else window.localStorage.removeItem(key);
     } catch (e) {
-      // Ingen lagring tillgänglig: filtret gäller bara tills editorn stängs.
+      // Ingen lagring här; Standard Notes sparar nedan.
     }
+    try {
+      if (!relay || !state.connected) return;
+      var all = {};
+      var current = relay.getComponentDataValueForKey(PREFS_KEY) || {};
+      Object.keys(current).forEach(function (k) { all[k] = current[k]; });
+      var mine = {};
+      Object.keys(all[DEVICE] || {}).forEach(function (k) { mine[k] = all[DEVICE][k]; });
+      if (value) mine[key] = value; else delete mine[key];
+      all[DEVICE] = mine;
+      relay.setComponentDataValueForKey(PREFS_KEY, all);
+    } catch (e) {
+      // Kan inte spara i Standard Notes; valet gäller tills editorn stängs.
+    }
+  }
+
+  /** Läser in inställningarna igen när Standard Notes har skickat pluginets data. */
+  function reloadPrefs() {
+    state.filter = loadPref(FILTER_KEY) || null;
+    state.gongfuOnly = loadPref(GONGFU_KEY) === '1';
+    state.refillOnly = loadPref(REFILL_KEY) === '1';
+    soundOn = loadPref(SOUND_KEY) !== '0';
+    initEink();
+    if (state.note) render();
   }
 
   // ---------- Teer ----------
@@ -437,12 +499,15 @@
     el.einkToggle.setAttribute('aria-pressed', String(on));
   }
 
-  (function () {
+  /** Sparat val, annars på för svartvita skärmar och Mudita-telefoner. */
+  function initEink() {
     var stored = loadPref(EINK_KEY);
-    var mono = false;
-    try { mono = window.matchMedia('(monochrome)').matches; } catch (e) { /* okänt */ }
-    applyEink(stored === '1' || (stored === null && mono));
-  })();
+    var auto = /Mudita|Kompakt/i.test(navigator.userAgent || '');
+    try { auto = auto || window.matchMedia('(monochrome)').matches; } catch (e) { /* okänt */ }
+    applyEink(stored === '1' || (stored === null && auto));
+  }
+
+  initEink();
 
   el.einkToggle.addEventListener('click', function () {
     var on = !document.documentElement.classList.contains('eink');
@@ -457,6 +522,9 @@
       state.connected = true;
       el.notice.hidden = true;
       setSaveState('', '');
+      // Pluginets data kan saknas första gången; då börjar den tom.
+      try { if (!relay.component.data) relay.component.data = {}; } catch (e) { /* okänt */ }
+      reloadPrefs();
     }
   });
 
