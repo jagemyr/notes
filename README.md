@@ -199,12 +199,17 @@ för om det **behöver fyllas på** och om det **passar för gong fu**.
   även då (provat med 1.7.4 på iPhone och Android 16).
 - **Fyll på:** bocka i *Behöver fyllas på* när ett te håller på att ta slut. Filterknappen **Fyll på** visar bara
   de teerna, som en inköpslista, och anteckningslistan i Standard Notes visar hur många som ska fyllas på.
-- **Filter:** knapparna under sökfältet visar alla teer eller en sort i taget. **Gong fu** visar bara teer som passar
+- **Filter:** knapparna under sökfältet (en rad som scrollar i sidled) visar alla teer eller en sort i taget. **Gong fu** visar bara teer som passar
   för gong fu och **Fyll på** bara teer som behöver köpas; de går att kombinera med varandra, med en sort och med
   sökningen. Filtren sparas per enhet. Med ett filter valt får ett nytt te den sorten (och gong fu eller fyll på).
 - Enter hoppar till nästa fält i samma te.
 - Anteckningslistan i Standard Notes visar till exempel *9 teer, 6 för gong fu, 2 att fylla på: 3 oolong, 2 grönt, …*.
 - Längst ner till höger står vilken version av pluginet som körs på enheten, t.ex. *v1.7.2*.
+- **E-ink-läge:** knappen med en halvfylld cirkel bredvid versionen gör appen svartvit för e-ink-skärmar (t.ex.
+  Mudita Kompakt): svarta kanter i stället för ljusgrå, valda knappar i svart med vit text, *Gong fu* med ram och
+  *Fyll på* inverterat, inga sortfärger, svart sigill och inga animationer (de ger spökbilder). Valet sparas per
+  enhet. Utan val slås det på av sig självt om skärmen säger att den är svartvit.
+- **Smal skärm** (under 400 px): mindre marginaler och ingen pil till höger på raderna, så att texten får plats.
 - **茶** (*chá*, te) står som ett rött sigill högst upp till vänster om sökfältet (som syns när listan har minst
   två teer) och i timern, penselskrivet i typsnittet Ma Shan Zheng. Pluginet har med sig bara det tecknet ur typsnittet, så det ser likadant ut på alla enheter.
 

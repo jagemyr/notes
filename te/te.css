@@ -59,10 +59,24 @@ button, input { font: inherit; color: inherit; }
   border-bottom: 1px solid var(--border);
 }
 
+/* Sorterna, Gong fu och Fyll på scrollar tillsammans i sidled, så att ingen knapp döljs bakom en annan. */
 .filter-row {
   display: flex;
+  align-items: center;
   gap: 6px;
   min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filter-row::-webkit-scrollbar { display: none; }
+
+.chip-divider {
+  flex: none;
+  align-self: stretch;
+  width: 1px;
+  margin: 6px 2px;
+  background: var(--border);
 }
 
 .search-row {
@@ -122,17 +136,11 @@ button, input { font: inherit; color: inherit; }
 
 .search-clear:hover { color: var(--fg); }
 
-/* Sortknapparna skrollar i sidled om de inte får plats; Gong fu står still till höger. */
 .chip-row {
-  flex: 1;
-  min-width: 0;
+  flex: none;
   display: flex;
   gap: 5px;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
-
-.chip-row::-webkit-scrollbar { display: none; }
 
 .chip {
   flex: none;
@@ -626,8 +634,11 @@ button, input { font: inherit; color: inherit; }
 
 /* Ett tryck på en rad i schemat startar timern där. */
 .brew tr[data-step] { cursor: pointer; }
-.brew tr[data-step]:hover th,
-.brew tr[data-step]:hover td { background: color-mix(in srgb, var(--success) 10%, transparent); }
+/* Bara med mus: på pekskärmar fastnar hovringen efter ett tryck (grå rad på e-ink). */
+@media (hover: hover) {
+  .brew tr[data-step]:hover th,
+  .brew tr[data-step]:hover td { background: color-mix(in srgb, var(--success) 10%, transparent); }
+}
 
 .brew-hint {
   margin: -6px 0 0;
@@ -814,6 +825,7 @@ body.timer-open { overflow: hidden; }
 .timer.phase-over .timer-time { color: var(--phase); }
 
 .timer-status {
+  text-wrap: balance;
   font-size: 0.9em;
   line-height: 1.35;
   color: var(--muted);
@@ -940,6 +952,26 @@ body.timer-open { overflow: hidden; }
 
 /* ---------- Statusrad ---------- */
 
+/* Knappen för e-ink-läge bredvid versionen. */
+.eink-toggle {
+  flex: none;
+  width: 28px;
+  height: 22px;
+  margin: -3px 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.eink-toggle[aria-pressed="true"] { color: var(--fg); }
+
+.status-right { align-items: center; }
+
 .status {
   display: flex;
   justify-content: space-between;
@@ -976,3 +1008,105 @@ body.timer-open { overflow: hidden; }
   .chevron, .check::before, .ring-progress { transition: none; }
   .timer.flash .timer-dial { animation: none; }
 }
+
+/* ---------- Smal skärm (t.ex. Mudita Kompakt) ---------- */
+
+/* Mindre marginaler och ingen pil, så att namn, land och smak får mer plats. */
+@media (max-width: 400px) {
+  :root { --gutter: 10px; }
+
+  .summary {
+    gap: 8px;
+    padding: 9px 10px 9px 13px;
+  }
+
+  .chevron { display: none; }
+
+  .details { padding: 12px 12px 12px 13px; }
+
+  .search-row { gap: 8px; }
+  .seal-top { --seal-size: 36px; }
+
+  .chip { padding: 0 9px; }
+
+  .s-gongfu,
+  .s-refill { padding: 1px 5px; }
+
+  .s-sub { gap: 6px; }
+}
+
+/* ---------- E-ink-läge ---------- */
+
+/*
+ * För e-ink-skärmar: bara svart och vitt (gråtoner blir rastrerade), ramar i stället för
+ * tonade bakgrunder, valda knappar i svart med vit text, inga färgkanter och inga
+ * animationer (de ger spökbilder). Slås på med knappen i statusraden.
+ */
+html.eink {
+  --bg: #fff;
+  --fg: #000;
+  --muted: #222;
+  --border: #000;
+  --accent: #000;
+  --danger: #000;
+  --success: #000;
+  --refill: #000;
+  --bar-bg: #fff;
+  --field-bg: #fff;
+  --seal-red: #000;
+  --seal-ink: #fff;
+}
+
+html.eink *,
+html.eink *::before,
+html.eink *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Sortfärgerna blir bara grått på e-ink: inga prickar och ingen färgkant. */
+html.eink .dot { display: none; }
+html.eink .tea { box-shadow: none; border-width: 1.5px; }
+html.eink .tea.expanded { border-width: 2px; }
+
+html.eink .chip,
+html.eink .suggestion,
+html.eink .timer-chip,
+html.eink .timer-btn,
+html.eink .timer-nav,
+html.eink .field input,
+html.eink .search input,
+html.eink .add-tea { border-width: 1.5px; border-color: #000; background: #fff; color: #000; }
+
+html.eink .chip[aria-pressed="true"],
+html.eink .suggestion[aria-pressed="true"],
+html.eink .timer-chip[aria-pressed="true"] {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+html.eink .chip-toggle { border-style: dashed; }
+html.eink .chip-toggle[aria-pressed="true"] { border-style: solid; }
+
+/* Märkena: Gong fu med ram, Fyll på inverterat så att det syns direkt. */
+html.eink .s-gongfu { background: #fff; border: 1px solid #000; color: #000; }
+html.eink .s-refill { background: #000; border: 1px solid #000; color: #fff; }
+
+html.eink .link-btn { text-decoration: underline; text-underline-offset: 3px; }
+html.eink .s-taste { opacity: 1; }
+html.eink .version { opacity: 1; }
+
+html.eink .brew { background: #fff; border: 1.5px solid #000; }
+html.eink .brew th,
+html.eink .brew td { border-top-color: #000; }
+
+/* Timern: tunn ring, intervallet lite tjockare, förloppet tjockt; läget står i texten. */
+html.eink .ring-track { stroke: #000; stroke-width: 2; }
+html.eink .ring-window { stroke: #000; stroke-width: 5; }
+html.eink .ring-progress { stroke: #000; }
+html.eink .timer-temp { background: #fff; border: 1.5px solid #000; }
+html.eink .timer-main { background: #000; color: #fff; }
+html.eink .timer.running.phase-brew .timer-main { background: #fff; color: #000; box-shadow: inset 0 0 0 2px #000; }
+html.eink .timer.phase-over .timer-time { text-decoration: underline; text-decoration-thickness: 4px; }
+

@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.9.1';
+  var VERSION = '1.10.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -111,6 +111,9 @@
     filtersBar: document.getElementById('filters-bar'),
     filters: document.getElementById('filters'),
     gongfuFilter: document.getElementById('gongfu-filter'),
+    filterRow: document.getElementById('filter-row'),
+    chipDivider: document.getElementById('chip-divider'),
+    einkToggle: document.getElementById('eink-toggle'),
     refillFilter: document.getElementById('refill-filter'),
     search: document.getElementById('search'),
     searchClear: document.getElementById('search-clear'),
@@ -423,6 +426,29 @@
 
   // Versionen längst ner till höger, så att man ser vilken version varje enhet kör.
   document.getElementById('version').textContent = 'v' + VERSION;
+
+  // E-ink-läge: svart och vitt, ramar i stället för tonade bakgrunder, inga animationer.
+  // Väljs per enhet med knappen i statusraden. Utan val slås det på av sig självt om
+  // skärmen säger att den är svartvit.
+  var EINK_KEY = 'se.jagemyr.te.eink';
+
+  function applyEink(on) {
+    document.documentElement.classList.toggle('eink', on);
+    el.einkToggle.setAttribute('aria-pressed', String(on));
+  }
+
+  (function () {
+    var stored = loadPref(EINK_KEY);
+    var mono = false;
+    try { mono = window.matchMedia('(monochrome)').matches; } catch (e) { /* okänt */ }
+    applyEink(stored === '1' || (stored === null && mono));
+  })();
+
+  el.einkToggle.addEventListener('click', function () {
+    var on = !document.documentElement.classList.contains('eink');
+    storePref(EINK_KEY, on ? '1' : '0');
+    applyEink(on);
+  });
 
   var relay = new ComponentRelay({
     targetWindow: window,
@@ -998,14 +1024,15 @@
       var active = el.filters.querySelector('.chip[aria-pressed="true"]');
       if (active) {
         var r = active.getBoundingClientRect();
-        var rr = el.filters.getBoundingClientRect();
-        if (r.right > rr.right) el.filters.scrollLeft += r.right - rr.right + 4;
-        else if (r.left < rr.left) el.filters.scrollLeft -= rr.left - r.left + 4;
+        var rr = el.filterRow.getBoundingClientRect();
+        if (r.right > rr.right) el.filterRow.scrollLeft += r.right - rr.right + 4;
+        else if (r.left < rr.left) el.filterRow.scrollLeft -= rr.left - r.left + 4;
       }
     }
     el.gongfuFilter.hidden = !anyGongfu && !state.gongfuOnly;
     el.gongfuFilter.setAttribute('aria-pressed', String(state.gongfuOnly));
     el.refillFilter.hidden = !anyRefill && !state.refillOnly;
+    el.chipDivider.hidden = el.gongfuFilter.hidden && el.refillFilter.hidden;
     el.refillFilter.setAttribute('aria-pressed', String(state.refillOnly));
   }
 
@@ -1513,11 +1540,13 @@
     if (tm.time.textContent !== text) tm.time.textContent = text;
 
     var status;
+    // Hårt mellanslag före enheten, så att "s" eller "min" inte hamnar ensamt på en rad.
+    var range = rangeText(step.lo, step.hi).replace(/ (s|min)$/, '\u00a0$1');
     if (phase === 'window') status = 'Häll nu';
-    else if (phase === 'over') status = 'Över tiden (' + rangeText(step.lo, step.hi) + ')';
-    else if (timer.running) status = 'Brygger · häll efter ' + rangeText(step.lo, step.hi);
+    else if (phase === 'over') status = 'Över tiden (' + range + ')';
+    else if (timer.running) status = 'Brygger · häll efter ' + range;
     else if (e > 0) status = 'Pausad';
-    else status = 'Häll efter ' + rangeText(step.lo, step.hi) + '. Tryck Starta när vattnet är i.';
+    else status = 'Häll efter ' + range + '. Tryck Starta när vattnet är i.';
     if (tm.status.textContent !== status) tm.status.textContent = status;
 
     ['brew', 'window', 'over'].forEach(function (p) { tm.root.classList.toggle('phase-' + p, p === phase); });
