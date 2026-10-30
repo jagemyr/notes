@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Tea (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=2.0.0">
+  <link rel="stylesheet" href="te.css?v=2.1.0">
 </head>
 <body>
   <nav class="filters" id="filters-bar" aria-label="Search and filter teas" hidden>
@@ -18,12 +18,13 @@
         </button>
       </div>
     </div>
-    <!-- Sorterna, Gong fu och Fyll på i en enda rad som scrollar i sidled, så att inget döljs. -->
+    <!-- Sorterna, Gong fu, Refill och Untried i en enda rad som scrollar i sidled, så att inget döljs. -->
     <div class="filter-row" id="filter-row">
       <div class="chip-row" id="filters"></div>
       <span class="chip-divider" id="chip-divider" aria-hidden="true"></span>
       <button type="button" class="chip chip-toggle" id="gongfu-filter" aria-pressed="false">Gong fu</button>
       <button type="button" class="chip chip-toggle chip-refill" id="refill-filter" aria-pressed="false">Refill</button>
+      <button type="button" class="chip chip-toggle chip-untried" id="untried-filter" aria-pressed="false">Untried</button>
     </div>
   </nav>
 
@@ -77,6 +78,7 @@
             <span class="s-meta"></span>
             <span class="s-gongfu" hidden>Gong fu</span>
             <span class="s-refill" hidden>Refill</span>
+            <span class="s-untried" hidden>Untried</span>
           </span>
           <span class="s-taste"></span>
         </span>
@@ -147,6 +149,10 @@
           <label class="toggle toggle-refill">
             <input type="checkbox" class="check refill-check" data-flag="fyllpa">
             <span>Needs refill</span>
+          </label>
+          <label class="toggle toggle-untried">
+            <input type="checkbox" class="check untried-check" data-flag="untried">
+            <span>Not tried yet</span>
           </label>
           <label class="toggle toggle-gongfu">
             <input type="checkbox" class="check gongfu-check" data-flag="gongfu">
@@ -236,7 +242,7 @@
     </div>
   </div>
 
-  <script src="vendor/component-relay.js?v=2.0.0"></script>
-  <script src="te.js?v=2.0.0"></script>
+  <script src="vendor/component-relay.js?v=2.1.0"></script>
+  <script src="te.js?v=2.1.0"></script>
 </body>
 </html>

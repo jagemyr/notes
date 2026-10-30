@@ -142,17 +142,17 @@ visas under datumfältet tills ett nytt datum väljs.
 *(The Tea plugin and app are in English from version 2.0.0, so this section is too.)*
 
 A list of teas. Each tea has a **Type**, **Name**, **Temperature**, **Brew time** (western brewing), **Country**,
-**Shop**, **Taste** and checkboxes for **Needs refill** and **Good for gong fu**.
+**Shop**, **Taste** and checkboxes for **Needs refill**, **Not tried yet** and **Good for gong fu**.
 
 - Teas are grouped by type (green, white, yellow, oolong, black, pu-erh, dark, matcha, herbal, rooibos, then
   your own types and finally *No type*) and sorted by name within the group. Each type has its own colour as a
   stripe on the left of the row.
-- A row shows name, country and shop, a green **Gong fu** badge and an orange **Refill** badge when ticked, the
+- A row shows name, country and shop, a green **Gong fu**, an orange **Refill** and a blue **Untried** badge when ticked, the
   taste on its own line below, and temperature and brew time on the right. Long rows are cut short with *…*;
   when a tea is expanded, name, country, shop and taste wrap, so the whole taste profile is visible without
   *Edit* even on a narrow screen.
-- Tap a tea to expand it. It first opens without fields: the timer buttons, the *Needs refill* checkbox and the
-  gong fu schedule. **Edit** shows the fields, the choice buttons, *Good for gong fu* and *Remove tea*, so a tap
+- Tap a tea to expand it. It first opens without fields: the timer buttons, the *Needs refill* and *Not tried yet*
+  checkboxes and the gong fu schedule. **Edit** shows the fields, the choice buttons, *Good for gong fu* and *Remove tea*, so a tap
   while scrolling can't change the type by mistake. A new tea opens straight in edit mode. **Done** collapses it.
   While a tea is expanded it stays in place even if you change its type or name; it moves to the right group
   when it is collapsed.
@@ -203,19 +203,21 @@ A list of teas. Each tea has a **Type**, **Name**, **Temperature**, **Brew time*
   come on time then as well (tested with 1.7.4 on iPhone and Android 16).
 - **Refill:** tick *Needs refill* when a tea is running low. The **Refill** filter button shows only those teas,
   like a shopping list, and the note list in Standard Notes shows how many need a refill.
+- **Untried:** tick *Not tried yet* for a tea you have at home but haven't tasted. The **Untried** filter button
+  shows only those teas, and unticking it after the first cup takes the tea off that list.
 - **Filters:** the buttons under the search field (a row that scrolls sideways) show all teas or one type at a
-  time. **Gong fu** shows only teas good for gong fu and **Refill** only teas that need buying; they combine with
-  each other, with a type and with search. Filters are saved per device. With a filter chosen, a new tea gets that
-  type (and gong fu or refill).
+  time. **Gong fu** shows only teas good for gong fu, **Refill** only teas that need buying and **Untried** only
+  teas not tried yet; they combine with each other, with a type and with search. Filters are saved per device.
+  With a filter chosen, a new tea gets that type (and gong fu, refill or untried).
 - Enter jumps to the next field in the same tea.
-- The note list in Standard Notes shows, for example, *9 teas, 6 for gong fu, 2 to refill: 3 oolong, 2 green, …*.
-- The version running on the device is shown at the bottom right, e.g. *v2.0.0*.
+- The note list in Standard Notes shows, for example, *9 teas, 6 for gong fu, 2 to refill, 1 untried: 3 oolong, 2 green, …*.
+- The version running on the device is shown at the bottom right, e.g. *v2.1.0*.
 - **E-ink mode:** the **E-ink** button next to the version makes the app black and white for e-ink screens (e.g.
   Mudita Kompakt): black borders instead of light grey, selected buttons in black with white text, *Gong fu*
-  outlined and *Refill* inverted, no type colours, a black seal and no animations (they cause ghosting). The choice
+  outlined, *Refill* inverted and *Untried* with a dashed outline (so the badges differ by shape, not colour), no type colours, a black seal and no animations (they cause ghosting). The choice
   is saved per device. Without a choice it turns on by itself on Mudita phones and if the screen reports that it
   is monochrome.
-- **Settings per device** (filters, Gong fu, Refill, sound and e-ink) are saved in localStorage and also in the
+- **Settings per device** (filters, Gong fu, Refill, Untried, sound and e-ink) are saved in localStorage and also in the
   plugin's data in Standard Notes, under a key for the device (model and screen size). Standard Notes on the phone
   clears the plugin's localStorage each time the note is opened; the choices are then read from there instead.
 - **Narrow screen** (under 400 px): smaller margins and no arrow on the right of the rows, so the text fits.
@@ -236,6 +238,7 @@ Shop: In the Mood for Tea
 Taste: honey, peach, floral
 Gong fu: yes
 Refill:
+Untried:
 
 Type: Green
 Name: Sencha
@@ -246,10 +249,11 @@ Shop: The Tea Centre
 Taste:
 Gong fu:
 Refill: yes
+Untried: yes
 ```
 
-`Gong fu` and `Refill` are `yes` or empty; written by hand, `x`, `✅` and `ja` also count as yes, and
-`Running low: yes` or `Buy again: yes` as Refill. Fields written by hand with other names are recognised (e.g.
+`Gong fu`, `Refill` and `Untried` are `yes` or empty; written by hand, `x`, `✅` and `ja` also count as yes,
+`Running low: yes` or `Buy again: yes` as Refill, and `Not tried: yes` or Swedish `Ej testat: ja` as Untried. Fields written by hand with other names are recognised (e.g.
 `Tea`, `Temp`, `Steep time`, `Origin`, `Bought at`, `Tasting notes`) and rewritten to the field names when the list
 is saved. Teas with nothing filled in are not saved. Lines that are not fields stay unchanged, in their tea if they
 are in a block with fields, otherwise at the end.
@@ -273,7 +277,7 @@ in a note. It needs no internet permission.
 - The list and settings are saved in the app straight away and survive a restart.
 - The screen is kept on while the timer is open.
 - **Back** closes the timer or the Text panel, collapses the tea or clears the search, and otherwise closes the app.
-- The version is the same as the plugin's (e.g. *v2.0.0*), because the app is built from `te/`.
+- The version is the same as the plugin's (e.g. *v2.1.0*), because the app is built from `te/`.
 
 The same pages can be tried in a browser with `te/index.html?standalone=1` (the list is then stored in
 localStorage).

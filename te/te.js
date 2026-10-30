@@ -18,6 +18,7 @@
  *   Taste: honey, floral
  *   Gong fu: yes
  *   Refill:
+ *   Untried:
  *
  * Rader som inte är fält (t.ex. något som skrivits i en annan editor) ligger kvar
  * oförändrade: i sitt te om de står i ett block med fält, annars sist.
@@ -27,7 +28,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '2.0.0';
+  var VERSION = '2.1.0';
 
   // Fristående läge: i Te-appen för Android (som ger window.TeNative) eller med ?standalone=1.
   // Då finns ingen Standard Notes: teerna sparas i appen, och Text-panelen flyttar texten
@@ -48,6 +49,7 @@
   var FILTER_KEY = 'se.jagemyr.te.filter';
   var GONGFU_KEY = 'se.jagemyr.te.gongfu';
   var REFILL_KEY = 'se.jagemyr.te.fyllpa';
+  var UNTRIED_KEY = 'se.jagemyr.te.untried';
   var NO_SORT = 'none';
 
   // Sorterna i den ordning grupperna visas. Alias gör att andra stavningar hamnar i rätt grupp
@@ -156,7 +158,9 @@
     // flag: sparas som "yes" eller tomt.
     { key: 'gongfu', label: 'Gong fu', flag: true, aliases: ['gong fu', 'gongfu', 'gong-fu', 'gong fu cha', 'gongfu cha', 'good for gong fu', 'passar för gong fu'] },
     // Teet håller på att ta slut och ska köpas igen.
-    { key: 'fyllpa', label: 'Refill', flag: true, aliases: ['refill', 'needs refill', 'needs refilling', 'restock', 'running low', 'buy again', 'buy more', 'reorder', 'fyll på', 'fyll pa', 'fyllpå', 'påfyllning', 'behöver fyllas på', 'snart slut', 'slut', 'köp', 'köpa', 'köp mer', 'köpa mer'] }
+    { key: 'fyllpa', label: 'Refill', flag: true, aliases: ['refill', 'needs refill', 'needs refilling', 'restock', 'running low', 'buy again', 'buy more', 'reorder', 'fyll på', 'fyll pa', 'fyllpå', 'påfyllning', 'behöver fyllas på', 'snart slut', 'slut', 'köp', 'köpa', 'köp mer', 'köpa mer'] },
+    // Ett te man har hemma men inte har smakat än.
+    { key: 'untried', label: 'Untried', flag: true, aliases: ['untried', 'not tried', 'not tried yet', 'untested', 'to try', 'ej testat', 'ej testad', 'inte testat', 'inte provat', 'otestat', 'otestad', 'oprovat', 'oprovad'] }
   ];
   // Fältnamn som bara finns i äldre, svensk text: en sådan text skrivs om till engelska.
   var SWEDISH_LABELS = ['sort', 'tesort', 'typ', 'namn', 'te', 'benämning', 'temperatur', 'vattentemperatur',
@@ -164,7 +168,8 @@
     'ursprungsland', 'butik', 'köpt', 'köpt i', 'köpt på', 'köpt hos', 'köpställe', 'inköpsställe', 'affär',
     'handlare', 'smak', 'smaker', 'smakprofil', 'smaknoter', 'smaknot', 'smakbeskrivning', 'passar för gong fu',
     'fyll på', 'fyll pa', 'fyllpå', 'påfyllning', 'behöver fyllas på', 'snart slut', 'slut', 'köp', 'köpa',
-    'köp mer', 'köpa mer'];
+    'köp mer', 'köpa mer', 'ej testat', 'ej testad', 'inte testat', 'inte provat', 'otestat', 'otestad', 'oprovat',
+    'oprovad'];
   var TEXT_KEYS = ['sort', 'namn', 'temperatur', 'bryggtid', 'land', 'butik', 'smak'];
 
   var el = {
@@ -184,6 +189,7 @@
     textSave: document.getElementById('text-save'),
     textClose: document.getElementById('text-close'),
     refillFilter: document.getElementById('refill-filter'),
+    untriedFilter: document.getElementById('untried-filter'),
     search: document.getElementById('search'),
     searchClear: document.getElementById('search-clear'),
     groups: document.getElementById('groups'),
@@ -213,6 +219,7 @@
     filter: migrateFilter(loadPref(FILTER_KEY)),
     gongfuOnly: loadPref(GONGFU_KEY) === '1',
     refillOnly: loadPref(REFILL_KEY) === '1',
+    untriedOnly: loadPref(UNTRIED_KEY) === '1',
     // Sökningen sparas inte; den gäller tills man rensar den eller byter anteckning.
     search: '',
     lastSentText: null,
@@ -309,6 +316,7 @@
     state.filter = migrateFilter(loadPref(FILTER_KEY));
     state.gongfuOnly = loadPref(GONGFU_KEY) === '1';
     state.refillOnly = loadPref(REFILL_KEY) === '1';
+    state.untriedOnly = loadPref(UNTRIED_KEY) === '1';
     soundOn = loadPref(SOUND_KEY) !== '0';
     initEink();
     if (state.note) render();
@@ -317,7 +325,7 @@
   // ---------- Teer ----------
 
   function emptyTea() {
-    return { values: { sort: '', namn: '', temperatur: '', bryggtid: '', land: '', butik: '', smak: '', gongfu: false, fyllpa: false }, extra: [], prefill: false };
+    return { values: { sort: '', namn: '', temperatur: '', bryggtid: '', land: '', butik: '', smak: '', gongfu: false, fyllpa: false, untried: false }, extra: [], prefill: false };
   }
 
   /**
@@ -327,7 +335,7 @@
   function hasContent(tea) {
     if (tea.prefill) return false;
     return TEXT_KEYS.some(function (key) { return oneLine(tea.values[key]); }) ||
-      tea.values.gongfu || tea.values.fyllpa ||
+      tea.values.gongfu || tea.values.fyllpa || tea.values.untried ||
       tea.extra.some(function (line) { return line.trim(); });
   }
 
@@ -554,21 +562,22 @@
   /**
    * Förhandsvisningen i anteckningslistan.
    * Ett te: "Dong Ding · Oolong · 95 °C · Taiwan · gong fu".
-   * Flera: "12 teas, 7 for gong fu: 4 oolong, 3 green, 2 black, 2 pu-erh, 1 no type".
+   * Flera: "12 teas, 7 for gong fu, 2 untried: 4 oolong, 3 green, 2 black, 2 pu-erh, 1 no type".
    */
   function preview(teas) {
     var filled = teas.filter(hasContent);
     if (!filled.length) return '';
     if (filled.length === 1) {
       var v = filled[0].values;
-      var parts = [oneLine(v.namn), oneLine(v.sort), formatTemp(v.temperatur), formatTime(v.bryggtid), oneLine(v.land), v.gongfu ? 'gong fu' : '', v.fyllpa ? 'refill' : ''];
+      var parts = [oneLine(v.namn), oneLine(v.sort), formatTemp(v.temperatur), formatTime(v.bryggtid), oneLine(v.land), v.gongfu ? 'gong fu' : '', v.fyllpa ? 'refill' : '', v.untried ? 'untried' : ''];
       return truncate(parts.filter(Boolean).join(' · '));
     }
     var gongfu = filled.filter(function (tea) { return tea.values.gongfu; }).length;
     var refill = filled.filter(function (tea) { return tea.values.fyllpa; }).length;
+    var untried = filled.filter(function (tea) { return tea.values.untried; }).length;
     var groups = groupsOf(filled).sort(function (a, b) { return b.count - a.count || compareGroups(a, b); });
     return truncate(teaCount(filled.length) + (gongfu ? ', ' + gongfu + ' for gong fu' : '') +
-      (refill ? ', ' + refill + ' to refill' : '') + ': ' +
+      (refill ? ', ' + refill + ' to refill' : '') + (untried ? ', ' + untried + ' untried' : '') + ': ' +
       groups.map(function (g) { return g.count + ' ' + g.label.toLowerCase(); }).join(', '));
   }
 
@@ -900,10 +909,11 @@
     var tea = state.teas[index];
     // Med ett filter valt får det nya teet den sorten (och gong fu eller fyll på), som i Todo.
     var sort = filterSortLabel();
-    if (sort || state.gongfuOnly || state.refillOnly) {
+    if (sort || state.gongfuOnly || state.refillOnly || state.untriedOnly) {
       tea.values.sort = sort || tea.values.sort;
       tea.values.gongfu = state.gongfuOnly || tea.values.gongfu;
       tea.values.fyllpa = state.refillOnly || tea.values.fyllpa;
+      tea.values.untried = state.untriedOnly || tea.values.untried;
       tea.prefill = TEXT_KEYS.every(function (key) { return key === 'sort' || !oneLine(tea.values[key]); });
     }
     expand(index);
@@ -945,6 +955,16 @@
   });
 
   // Fyll på: bara teer som behöver köpas igen, som en inköpslista.
+  // Untried: teer man har hemma men inte har smakat än.
+  el.untriedFilter.addEventListener('click', function () {
+    state.untriedOnly = !state.untriedOnly;
+    storePref(UNTRIED_KEY, state.untriedOnly ? '1' : '');
+    collapse();
+    resetConfirm();
+    render();
+    el.page.scrollTop = 0;
+  });
+
   el.refillFilter.addEventListener('click', function () {
     state.refillOnly = !state.refillOnly;
     storePref(REFILL_KEY, state.refillOnly ? '1' : '');
@@ -959,6 +979,7 @@
     if (state.filter && groupFor(tea.values.sort).key !== state.filter) return false;
     if (state.gongfuOnly && !tea.values.gongfu) return false;
     if (state.refillOnly && !tea.values.fyllpa) return false;
+    if (state.untriedOnly && !tea.values.untried) return false;
     return matchesSearch(tea);
   }
 
@@ -989,7 +1010,7 @@
 
   /** Något av sort-, gong fu- eller fyll på-filtren är valt. */
   function anyFilter() {
-    return Boolean(state.filter) || state.gongfuOnly || state.refillOnly;
+    return Boolean(state.filter) || state.gongfuOnly || state.refillOnly || state.untriedOnly;
   }
 
   function setSearch(value) {
@@ -1196,7 +1217,9 @@
       } else {
         var label = state.filter ? groupsOf(filled).filter(function (g) { return g.key === state.filter; })[0] : null;
         var among = label ? ' among the ' + label.label.toLowerCase() + ' teas' : '';
-        if (state.refillOnly) text = 'Nothing needs a refill' + (state.gongfuOnly ? ' among the gong fu teas' : among) + '.';
+        if (state.refillOnly && state.untriedOnly) text = 'No teas match the selected filters.';
+        else if (state.refillOnly) text = 'Nothing needs a refill' + (state.gongfuOnly ? ' among the gong fu teas' : among) + '.';
+        else if (state.untriedOnly) text = 'No untried teas' + (state.gongfuOnly ? ' among the gong fu teas' : among) + '.';
         else if (state.gongfuOnly) text = 'No gong fu teas' + among + '.';
         else text = 'No teas here.';
       }
@@ -1211,6 +1234,7 @@
     var groups = groupsOf(filled);
     var anyGongfu = filled.some(function (tea) { return tea.values.gongfu; });
     var anyRefill = filled.some(function (tea) { return tea.values.fyllpa; });
+    var anyUntried = filled.some(function (tea) { return tea.values.untried; });
     var show = filled.length >= 2 || anyFilter() || Boolean(state.search);
     el.filtersBar.hidden = !show;
     if (!show) return;
@@ -1234,7 +1258,9 @@
     el.gongfuFilter.hidden = !anyGongfu && !state.gongfuOnly;
     el.gongfuFilter.setAttribute('aria-pressed', String(state.gongfuOnly));
     el.refillFilter.hidden = !anyRefill && !state.refillOnly;
-    el.chipDivider.hidden = el.gongfuFilter.hidden && el.refillFilter.hidden;
+    el.untriedFilter.hidden = !anyUntried && !state.untriedOnly;
+    el.untriedFilter.setAttribute('aria-pressed', String(state.untriedOnly));
+    el.chipDivider.hidden = el.gongfuFilter.hidden && el.refillFilter.hidden && el.untriedFilter.hidden;
     el.refillFilter.setAttribute('aria-pressed', String(state.refillOnly));
   }
 
@@ -1264,6 +1290,8 @@
       if (gongfu) text += ' · ' + gongfu + ' for gong fu';
       var refill = filled.filter(function (tea) { return tea.values.fyllpa; }).length;
       if (refill) text += ' · ' + refill + ' to refill';
+      var untried = filled.filter(function (tea) { return tea.values.untried; }).length;
+      if (untried) text += ' · ' + untried + ' untried';
     }
     el.count.textContent = text;
   }
@@ -1331,7 +1359,8 @@
     card.querySelector('.s-meta').textContent = metaText;
     card.querySelector('.s-gongfu').hidden = !tea.values.gongfu;
     card.querySelector('.s-refill').hidden = !tea.values.fyllpa;
-    card.querySelector('.s-sub').hidden = !metaText && !tea.values.gongfu && !tea.values.fyllpa;
+    card.querySelector('.s-untried').hidden = !tea.values.untried;
+    card.querySelector('.s-sub').hidden = !metaText && !tea.values.gongfu && !tea.values.fyllpa && !tea.values.untried;
     card.querySelector('.s-taste').textContent = tasteWords(tea.values.smak).join(', ');
 
     card.querySelector('.s-temp').textContent = formatTemp(tea.values.temperatur);

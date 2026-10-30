@@ -12,6 +12,8 @@
   --success: var(--sn-stylekit-success-color, #1f9d5c);
   /* Fyll på: orange, så att det skiljer sig från gröna Gong fu. */
   --refill: var(--sn-stylekit-warning-color, #d9822b);
+  /* Untried: blått, så att det skiljer sig från gröna Gong fu och orange Refill. */
+  --untried: var(--sn-stylekit-info-color, #086dd6);
   /* Sigillets röda färg (cinnober), samma i ljust och mörkt tema. */
   --seal-red: #b3322b;
   --seal-ink: #fbf3e6;
@@ -303,7 +305,8 @@ button, input { font: inherit; color: inherit; }
 .s-time:empty { display: none; }
 
 .s-gongfu,
-.s-refill {
+.s-refill,
+.s-untried {
   flex: none;
   padding: 1px 7px;
   border-radius: 9px;
@@ -318,6 +321,11 @@ button, input { font: inherit; color: inherit; }
 .s-refill {
   background: color-mix(in srgb, var(--refill) 16%, transparent);
   color: var(--refill);
+}
+
+.s-untried {
+  background: color-mix(in srgb, var(--untried) 13%, transparent);
+  color: var(--untried);
 }
 
 /* Märkena står kvar när landet är långt; landet kortas av i stället. */
@@ -345,6 +353,11 @@ button, input { font: inherit; color: inherit; }
 .chip-refill[aria-pressed="true"] {
   border-color: var(--refill);
   background: color-mix(in srgb, var(--refill) 16%, transparent);
+}
+
+.chip-untried[aria-pressed="true"] {
+  border-color: var(--untried);
+  background: color-mix(in srgb, var(--untried) 13%, transparent);
 }
 
 .chevron {
@@ -536,6 +549,11 @@ button, input { font: inherit; color: inherit; }
 .toggle-refill .check:checked::before {
   border-color: var(--refill);
   background-color: var(--refill);
+}
+
+.toggle-untried .check:checked::before {
+  border-color: var(--untried);
+  background-color: var(--untried);
 }
 
 .toggle {
@@ -1112,7 +1130,8 @@ body.timer-open { overflow: hidden; }
   .chip { padding: 0 9px; }
 
   .s-gongfu,
-  .s-refill { padding: 1px 5px; }
+  .s-refill,
+  .s-untried { padding: 1px 5px; }
 
   .s-sub { gap: 6px; }
 }
@@ -1133,6 +1152,7 @@ html.eink {
   --danger: #000;
   --success: #000;
   --refill: #000;
+  --untried: #000;
   --bar-bg: #fff;
   --field-bg: #fff;
   --seal-red: #000;
@@ -1172,9 +1192,11 @@ html.eink .timer-chip[aria-pressed="true"] {
 html.eink .chip-toggle { border-style: dashed; }
 html.eink .chip-toggle[aria-pressed="true"] { border-style: solid; }
 
-/* Märkena: Gong fu med ram, Fyll på inverterat så att det syns direkt. */
+/* Märkena: Gong fu med ram, Refill inverterat så att det syns direkt, Untried med streckad ram. */
 html.eink .s-gongfu { background: #fff; border: 1px solid #000; color: #000; }
 html.eink .s-refill { background: #000; border: 1px solid #000; color: #fff; }
+/* Untried med streckad ram: tre märken som skiljs åt på formen, inte på färgen. */
+html.eink .s-untried { background: #fff; border: 1.5px dashed #000; color: #000; }
 
 html.eink .link-btn { text-decoration: underline; text-underline-offset: 3px; }
 html.eink .s-taste { opacity: 1; }
