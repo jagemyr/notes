@@ -28,7 +28,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '2.1.0';
+  var VERSION = '2.2.0';
 
   // Fristående läge: i Te-appen för Android (som ger window.TeNative) eller med ?standalone=1.
   // Då finns ingen Standard Notes: teerna sparas i appen, och Text-panelen flyttar texten
@@ -49,6 +49,7 @@
   var FILTER_KEY = 'se.jagemyr.te.filter';
   var GONGFU_KEY = 'se.jagemyr.te.gongfu';
   var REFILL_KEY = 'se.jagemyr.te.fyllpa';
+  // Untried-filtret: '1' = bara oprovade (Untried), 'tried' = bara provade (Tried), tomt = alla.
   var UNTRIED_KEY = 'se.jagemyr.te.untried';
   var NO_SORT = 'none';
 
@@ -190,6 +191,7 @@
     textClose: document.getElementById('text-close'),
     refillFilter: document.getElementById('refill-filter'),
     untriedFilter: document.getElementById('untried-filter'),
+    triedFilter: document.getElementById('tried-filter'),
     search: document.getElementById('search'),
     searchClear: document.getElementById('search-clear'),
     groups: document.getElementById('groups'),
@@ -219,7 +221,8 @@
     filter: migrateFilter(loadPref(FILTER_KEY)),
     gongfuOnly: loadPref(GONGFU_KEY) === '1',
     refillOnly: loadPref(REFILL_KEY) === '1',
-    untriedOnly: loadPref(UNTRIED_KEY) === '1',
+    // '' (alla), 'untried' (bara oprovade) eller 'tried' (bara provade).
+    untriedMode: untriedModeFrom(loadPref(UNTRIED_KEY)),
     // Sökningen sparas inte; den gäller tills man rensar den eller byter anteckning.
     search: '',
     lastSentText: null,
@@ -316,7 +319,7 @@
     state.filter = migrateFilter(loadPref(FILTER_KEY));
     state.gongfuOnly = loadPref(GONGFU_KEY) === '1';
     state.refillOnly = loadPref(REFILL_KEY) === '1';
-    state.untriedOnly = loadPref(UNTRIED_KEY) === '1';
+    state.untriedMode = untriedModeFrom(loadPref(UNTRIED_KEY));
     soundOn = loadPref(SOUND_KEY) !== '0';
     initEink();
     if (state.note) render();
@@ -341,6 +344,11 @@
 
   function touch(tea) {
     tea.prefill = false;
+  }
+
+  function untriedModeFrom(stored) {
+    if (stored === '1' || stored === 'untried') return 'untried';
+    return stored === 'tried' ? 'tried' : '';
   }
 
   /** Ett sparat sortfilter från en äldre version ("k:Grönt") blir den nya nyckeln ("k:green"). */
@@ -909,11 +917,11 @@
     var tea = state.teas[index];
     // Med ett filter valt får det nya teet den sorten (och gong fu eller fyll på), som i Todo.
     var sort = filterSortLabel();
-    if (sort || state.gongfuOnly || state.refillOnly || state.untriedOnly) {
+    if (sort || state.gongfuOnly || state.refillOnly || state.untriedMode === 'untried') {
       tea.values.sort = sort || tea.values.sort;
       tea.values.gongfu = state.gongfuOnly || tea.values.gongfu;
       tea.values.fyllpa = state.refillOnly || tea.values.fyllpa;
-      tea.values.untried = state.untriedOnly || tea.values.untried;
+      tea.values.untried = state.untriedMode === 'untried' || tea.values.untried;
       tea.prefill = TEXT_KEYS.every(function (key) { return key === 'sort' || !oneLine(tea.values[key]); });
     }
     expand(index);
@@ -955,15 +963,18 @@
   });
 
   // Fyll på: bara teer som behöver köpas igen, som en inköpslista.
-  // Untried: teer man har hemma men inte har smakat än.
-  el.untriedFilter.addEventListener('click', function () {
-    state.untriedOnly = !state.untriedOnly;
-    storePref(UNTRIED_KEY, state.untriedOnly ? '1' : '');
+  // Untried: teer man har hemma men inte har smakat än. Tried: alla andra. Bara ett av dem åt gången.
+  function setUntriedMode(mode) {
+    state.untriedMode = state.untriedMode === mode ? '' : mode;
+    storePref(UNTRIED_KEY, state.untriedMode === 'untried' ? '1' : state.untriedMode);
     collapse();
     resetConfirm();
     render();
     el.page.scrollTop = 0;
-  });
+  }
+
+  el.untriedFilter.addEventListener('click', function () { setUntriedMode('untried'); });
+  el.triedFilter.addEventListener('click', function () { setUntriedMode('tried'); });
 
   el.refillFilter.addEventListener('click', function () {
     state.refillOnly = !state.refillOnly;
@@ -979,7 +990,8 @@
     if (state.filter && groupFor(tea.values.sort).key !== state.filter) return false;
     if (state.gongfuOnly && !tea.values.gongfu) return false;
     if (state.refillOnly && !tea.values.fyllpa) return false;
-    if (state.untriedOnly && !tea.values.untried) return false;
+    if (state.untriedMode === 'untried' && !tea.values.untried) return false;
+    if (state.untriedMode === 'tried' && tea.values.untried) return false;
     return matchesSearch(tea);
   }
 
@@ -1010,7 +1022,7 @@
 
   /** Något av sort-, gong fu- eller fyll på-filtren är valt. */
   function anyFilter() {
-    return Boolean(state.filter) || state.gongfuOnly || state.refillOnly || state.untriedOnly;
+    return Boolean(state.filter) || state.gongfuOnly || state.refillOnly || Boolean(state.untriedMode);
   }
 
   function setSearch(value) {
@@ -1217,9 +1229,10 @@
       } else {
         var label = state.filter ? groupsOf(filled).filter(function (g) { return g.key === state.filter; })[0] : null;
         var among = label ? ' among the ' + label.label.toLowerCase() + ' teas' : '';
-        if (state.refillOnly && state.untriedOnly) text = 'No teas match the selected filters.';
+        if (state.refillOnly && state.untriedMode) text = 'No teas match the selected filters.';
         else if (state.refillOnly) text = 'Nothing needs a refill' + (state.gongfuOnly ? ' among the gong fu teas' : among) + '.';
-        else if (state.untriedOnly) text = 'No untried teas' + (state.gongfuOnly ? ' among the gong fu teas' : among) + '.';
+        else if (state.untriedMode === 'untried') text = 'No untried teas' + (state.gongfuOnly ? ' among the gong fu teas' : among) + '.';
+        else if (state.untriedMode === 'tried') text = 'No tried teas yet' + (state.gongfuOnly ? ' among the gong fu teas' : among) + '.';
         else if (state.gongfuOnly) text = 'No gong fu teas' + among + '.';
         else text = 'No teas here.';
       }
@@ -1258,9 +1271,12 @@
     el.gongfuFilter.hidden = !anyGongfu && !state.gongfuOnly;
     el.gongfuFilter.setAttribute('aria-pressed', String(state.gongfuOnly));
     el.refillFilter.hidden = !anyRefill && !state.refillOnly;
-    el.untriedFilter.hidden = !anyUntried && !state.untriedOnly;
-    el.untriedFilter.setAttribute('aria-pressed', String(state.untriedOnly));
-    el.chipDivider.hidden = el.gongfuFilter.hidden && el.refillFilter.hidden && el.untriedFilter.hidden;
+    // Tried och Untried behövs bara när något te är oprovat (eller när ett av dem redan är valt).
+    el.triedFilter.hidden = !anyUntried && state.untriedMode !== 'tried';
+    el.triedFilter.setAttribute('aria-pressed', String(state.untriedMode === 'tried'));
+    el.untriedFilter.hidden = !anyUntried && state.untriedMode !== 'untried';
+    el.untriedFilter.setAttribute('aria-pressed', String(state.untriedMode === 'untried'));
+    el.chipDivider.hidden = el.gongfuFilter.hidden && el.refillFilter.hidden && el.untriedFilter.hidden && el.triedFilter.hidden;
     el.refillFilter.setAttribute('aria-pressed', String(state.refillOnly));
   }
 

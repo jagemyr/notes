@@ -203,21 +203,24 @@ A list of teas. Each tea has a **Type**, **Name**, **Temperature**, **Brew time*
   come on time then as well (tested with 1.7.4 on iPhone and Android 16).
 - **Refill:** tick *Needs refill* when a tea is running low. The **Refill** filter button shows only those teas,
   like a shopping list, and the note list in Standard Notes shows how many need a refill.
-- **Untried:** tick *Not tried yet* for a tea you have at home but haven't tasted. The **Untried** filter button
-  shows only those teas, and unticking it after the first cup takes the tea off that list.
+- **Untried and Tried:** tick *Not tried yet* for a tea you have at home but haven't tasted. The **Untried** filter
+  button shows only those teas, and unticking it after the first cup takes the tea off that list. **Tried** is the
+  opposite: it hides every tea marked *Not tried yet*, so a long import of untried teas stays out of the way. Only
+  one of the two can be on at a time; tapping the chosen one again shows all teas. Both buttons only appear when
+  some tea is untried.
 - **Filters:** the buttons under the search field (a row that scrolls sideways) show all teas or one type at a
   time. **Gong fu** shows only teas good for gong fu, **Refill** only teas that need buying and **Untried** only
-  teas not tried yet; they combine with each other, with a type and with search. Filters are saved per device.
+  teas not tried yet, **Tried** only teas you have tried; they combine with each other, with a type and with search. Filters are saved per device.
   With a filter chosen, a new tea gets that type (and gong fu, refill or untried).
 - Enter jumps to the next field in the same tea.
 - The note list in Standard Notes shows, for example, *9 teas, 6 for gong fu, 2 to refill, 1 untried: 3 oolong, 2 green, …*.
-- The version running on the device is shown at the bottom right, e.g. *v2.1.0*.
+- The version running on the device is shown at the bottom right, e.g. *v2.2.0*.
 - **E-ink mode:** the **E-ink** button next to the version makes the app black and white for e-ink screens (e.g.
   Mudita Kompakt): black borders instead of light grey, selected buttons in black with white text, *Gong fu*
   outlined, *Refill* inverted and *Untried* with a dashed outline (so the badges differ by shape, not colour), no type colours, a black seal and no animations (they cause ghosting). The choice
   is saved per device. Without a choice it turns on by itself on Mudita phones and if the screen reports that it
   is monochrome.
-- **Settings per device** (filters, Gong fu, Refill, Untried, sound and e-ink) are saved in localStorage and also in the
+- **Settings per device** (filters, Gong fu, Refill, Tried/Untried, sound and e-ink) are saved in localStorage and also in the
   plugin's data in Standard Notes, under a key for the device (model and screen size). Standard Notes on the phone
   clears the plugin's localStorage each time the note is opened; the choices are then read from there instead.
 - **Narrow screen** (under 400 px): smaller margins and no arrow on the right of the rows, so the text fits.
@@ -277,7 +280,7 @@ in a note. It needs no internet permission.
 - The list and settings are saved in the app straight away and survive a restart.
 - The screen is kept on while the timer is open.
 - **Back** closes the timer or the Text panel, collapses the tea or clears the search, and otherwise closes the app.
-- The version is the same as the plugin's (e.g. *v2.1.0*), because the app is built from `te/`.
+- The version is the same as the plugin's (e.g. *v2.2.0*), because the app is built from `te/`.
 
 The same pages can be tried in a browser with `te/index.html?standalone=1` (the list is then stored in
 localStorage).
