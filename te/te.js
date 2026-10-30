@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.8.1';
+  var VERSION = '1.8.2';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -1233,6 +1233,8 @@
   var tm = {
     root: document.getElementById('timer'),
     tea: document.getElementById('timer-tea'),
+    temp: document.getElementById('timer-temp'),
+    tempValue: document.getElementById('timer-temp-value'),
     step: document.getElementById('timer-step'),
     note: document.getElementById('timer-note'),
     time: document.getElementById('timer-time'),
@@ -1263,6 +1265,8 @@
     if (kind === 'western' && !western) return;
     timer = {
       name: oneLine(tea.values.namn) || 'Te',
+      // Vattentemperaturen, som "90–95 °C"; visas ovanför ringen.
+      temp: formatTemp(tea.values.temperatur),
       kind: kind,
       schedule: BREW_SCHEDULES[scheduleName(tea)],
       western: western,
@@ -1449,6 +1453,8 @@
     var minutes = step.hi >= 60;
 
     tm.tea.textContent = timer.name;
+    tm.temp.hidden = !timer.temp;
+    if (tm.tempValue.textContent !== timer.temp) tm.tempValue.textContent = timer.temp;
     tm.step.textContent = step.label;
     tm.note.textContent = step.note;
     tm.note.hidden = !step.note;

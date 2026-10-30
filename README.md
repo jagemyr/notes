@@ -175,7 +175,7 @@ för om det **behöver fyllas på** och om det **passar för gong fu**.
   kombinera med filtren, rensas med krysset eller Escape och sparas inte.
 - **Timer:** överst i ett utfällt te finns **Gong fu-timer** (när gong fu är ibockat) och en knapp med teets bryggtid
   för vanlig bryggning (t.ex. *2–3 min*). Man kan också trycka på ett steg i gong fu-schemat för att börja där.
-  Timern räknar ner till den kortaste tiden i intervallet. Vid noll är det dags att hälla: ljud, vibration (där
+  Teets vattentemperatur står ovanför ringen (t.ex. *90–95 °C*). Timern räknar ner till den kortaste tiden i intervallet. Vid noll är det dags att hälla: ljud, vibration (där
   telefonen kan) och *Häll nu*. Sedan räknas sekunderna uppåt, grönt så länge man är inom intervallet och orange
   efter det. I gong fu startar den stora knappen nästa infusion direkt (*Starta infusion 2*), och efter infusion 5
   läggs 10 sekunder till per infusion. Vitt te följer sitt eget schema. Stegknapparna (Skölj, 1–5, 6+) och pilarna

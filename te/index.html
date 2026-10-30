@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Te (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=1.8.1">
+  <link rel="stylesheet" href="te.css?v=1.8.2">
 </head>
 <body>
   <nav class="filters" id="filters-bar" aria-label="Sök och filtrera teer" hidden>
@@ -176,6 +176,10 @@
     </div>
 
     <div class="timer-body">
+    <p class="timer-temp" id="timer-temp" hidden>
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M10 4.5a2 2 0 0 1 4 0v9.3a4 4 0 1 1-4 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="17" r="1.6" fill="currentColor"/><path d="M12 15.4V9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span class="visually-hidden">Vattentemperatur </span><span id="timer-temp-value"></span>
+    </p>
     <div class="timer-dial">
       <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
         <circle class="ring-track" cx="100" cy="100" r="90"/>
@@ -202,7 +206,7 @@
     </div>
   </div>
 
-  <script src="vendor/component-relay.js?v=1.8.1"></script>
-  <script src="te.js?v=1.8.1"></script>
+  <script src="vendor/component-relay.js?v=1.8.2"></script>
+  <script src="te.js?v=1.8.2"></script>
 </body>
 </html>

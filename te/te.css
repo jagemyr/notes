@@ -708,6 +708,31 @@ body.timer-open { overflow: hidden; }
   width: 100%;
 }
 
+/* Vattentemperaturen ovanför ringen, så att man ser den när man häller upp. */
+.timer-temp {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px 6px 10px;
+  border-radius: 18px;
+  background: var(--field-bg);
+  font-size: 1.1em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-temp svg { color: var(--danger); }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .timer-dial {
   position: relative;
   width: min(74vw, 300px, 46vh);
