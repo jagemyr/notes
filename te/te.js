@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.7.2';
+  var VERSION = '1.7.3';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -1218,7 +1218,10 @@
   // sekunderna uppåt: grönt så länge man är inom intervallet, orange efter det. Tiden räknas
   // från klockan och inte från antalet tick, så den stämmer även om webbläsaren saktar ner.
   // Pipen bokas in i ljudsystemet redan när timern startar: med låst skärm saktar telefonen
-  // ner JavaScript (tick kan komma 20 sekunder sent), men ljudet spelas ändå i tid.
+  // ner JavaScript (tick kan komma 20 sekunder sent), men ljudet spelas ändå i tid. En
+  // ohörbar ton håller ljudsystemet igång medan timern går; annars kan telefonen frysa dess
+  // klocka när skärmen är släckt, och då spelas inget. Hinner ljudklockan ändå inte fram
+  // piper timern direkt när tick kommer (reserv), så att pipet aldrig uteblir helt.
   // Inget av detta sparas i anteckningen.
 
   var SOUND_KEY = 'se.jagemyr.te.ljud';
@@ -1268,6 +1271,16 @@
       booked: [],
       bookedLo: false,
       bookedHi: false,
+      // Ljudklockans tid för de inbokade pipen, för att se om de faktiskt har spelats.
+      bookedLoAt: 0,
+      bookedHiAt: 0,
+      // När pipen bokades, i vanlig tid och i ljudklockans tid, och ljudklockan vid förra
+      // ticket. Visar om ljudklockan har gått som den ska eller stått still.
+      bookWall: 0,
+      bookAudio: 0,
+      lastAudio: 0,
+      // Den ohörbara tonen som håller ljudsystemet igång medan timern går.
+      keepAlive: null,
       opener: document.activeElement
     };
     unlockAudio();
@@ -1283,6 +1296,7 @@
     if (!timer) return;
     var opener = timer.opener;
     cancelBeeps();
+    stopKeepAlive();
     timer = null;
     clearInterval(tickHandle);
     tickHandle = null;
@@ -1314,6 +1328,7 @@
     unlockAudio();
     timer.running = true;
     timer.startedAt = Date.now();
+    startKeepAlive();
     bookBeeps();
     requestWakeLock();
     renderTimer();
@@ -1323,11 +1338,13 @@
     timer.elapsed = timerElapsed();
     timer.running = false;
     cancelBeeps();
+    stopKeepAlive();
     renderTimer();
   }
 
   function goToStep(index, autostart) {
     cancelBeeps();
+    if (!autostart) stopKeepAlive();
     timer.index = timer.kind === 'western' ? 0 : Math.max(0, index);
     timer.elapsed = 0;
     timer.running = false;
@@ -1348,6 +1365,16 @@
     if (timer.running) {
       var step = timerStep(timer.index);
       var e = timerElapsed();
+      // Har ljudklockan stått still en stund men går nu igen ligger pipen för sent; boka om
+      // dem. Står den fortfarande still hjälper det inte, och då väntar vi på reservpipet.
+      if (audio) {
+        var moving = audio.currentTime > timer.lastAudio + 0.001;
+        timer.lastAudio = audio.currentTime;
+        if (moving && (lagging(timer.bookedLo && !timer.firedLo, timer.bookedLoAt, step.lo, e) ||
+                       lagging(timer.bookedHi && !timer.firedHi, timer.bookedHiAt, step.hi, e))) {
+          bookBeeps();
+        }
+      }
       if (!timer.firedLo && e >= step.lo) {
         timer.firedLo = true;
         signal(true);
@@ -1360,6 +1387,23 @@
       if (e > step.hi + OVERTIME_STOP) pauseTimer();
     }
     renderTimer();
+  }
+
+  /** Ligger ett inbokat pip mer än en halv sekund senare i ljudklockan än det borde? */
+  function lagging(booked, at, target, elapsed) {
+    return booked && elapsed < target && (at - audio.currentTime) - (target - elapsed) > 0.5;
+  }
+
+  /**
+   * Har det inbokade pipet vid ljudklockans tid `at` hörts? Ja om ljudsystemet går, dess klocka
+   * har nått pipet och har gått lika långt som den vanliga klockan sedan pipen bokades. Stod
+   * ljudklockan still (släckt skärm) har pipet inte spelats, hur nära det än ser ut att vara.
+   */
+  function bookedHeard(at) {
+    if (!audio || audio.state !== 'running') return false;
+    var audioProgress = audio.currentTime - timer.bookAudio;
+    var wallProgress = (Date.now() - timer.bookWall) / 1000;
+    return audio.currentTime >= at - 0.25 && audioProgress >= wallProgress - 0.5;
   }
 
   /** Huvudknappen: Starta, Paus, Fortsätt, och efter nolltid Starta nästa infusion (eller Klar). */
@@ -1506,14 +1550,20 @@
     if (!timer || !timer.running || !soundOn || !audio) return;
     var step = timerStep(timer.index);
     var e = timerElapsed();
+    timer.bookWall = Date.now();
+    timer.bookAudio = audio.currentTime;
+    timer.lastAudio = audio.currentTime;
     if (!timer.firedLo && e < step.lo) {
-      timer.booked = timer.booked.concat(beep(3, 880, step.lo - e));
-      timer.bookedLo = timer.booked.length > 0;
+      var strong = beep(3, 880, step.lo - e);
+      timer.booked = timer.booked.concat(strong);
+      timer.bookedLo = strong.length > 0;
+      timer.bookedLoAt = audio.currentTime + (step.lo - e);
     }
     if (!timer.firedHi && step.hi > step.lo && e < step.hi) {
       var weak = beep(1, 587, step.hi - e);
       timer.booked = timer.booked.concat(weak);
       timer.bookedHi = weak.length > 0;
+      timer.bookedHiAt = audio.currentTime + (step.hi - e);
     }
     tm.root.setAttribute('data-booked', String(timer.booked.length));
   }
@@ -1528,19 +1578,58 @@
     timer.booked = [];
     timer.bookedLo = false;
     timer.bookedHi = false;
+    timer.bookedLoAt = 0;
+    timer.bookedHiAt = 0;
     tm.root.setAttribute('data-booked', '0');
+  }
+
+  /**
+   * En ohörbar ton (40 Hz, −60 dB) medan timern går. Den håller telefonens ljudsystem
+   * igång med släckt skärm, så att ljudklockan går och de inbokade pipen spelas.
+   */
+  function startKeepAlive() {
+    if (!timer || timer.keepAlive || !soundOn || !audio) return;
+    try {
+      var osc = audio.createOscillator();
+      var gain = audio.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 40;
+      gain.gain.value = 0.001;
+      osc.connect(gain);
+      gain.connect(audio.destination);
+      osc.start();
+      timer.keepAlive = { osc: osc, gain: gain };
+      tm.root.setAttribute('data-keepalive', '1');
+    } catch (e) {
+      timer.keepAlive = null;
+    }
+  }
+
+  function stopKeepAlive() {
+    if (!timer || !timer.keepAlive) return;
+    try { timer.keepAlive.gain.disconnect(); } catch (e) { /* redan frånkopplad */ }
+    try { timer.keepAlive.osc.stop(); } catch (e) { /* redan stoppad */ }
+    timer.keepAlive = null;
+    tm.root.setAttribute('data-keepalive', '0');
   }
 
   /** Stark signal när det är dags att hälla, svag när intervallet är slut. */
   function signal(strong) {
     signalCount++;
     tm.root.setAttribute('data-signals', String(signalCount));
-    // Pip bara här om det inte redan var inbokat (då har det redan hörts, i tid). Var
-    // ljudsystemet pausat av telefonen hördes det inbokade inte, och då piper vi nu.
-    var booked = timer && (strong ? timer.bookedLo : timer.bookedHi) && audio && audio.state === 'running';
-    if (!booked) {
+    // Pip bara här om det inbokade inte har hörts. Det har hörts om ljudsystemet går och dess
+    // klocka har hunnit fram till pipet; annars (frusen klocka med släckt skärm) piper vi nu
+    // och avbokar det gamla, så att det inte kommer sent ovanpå.
+    var booked = timer && (strong ? timer.bookedLo : timer.bookedHi);
+    var at = timer ? (strong ? timer.bookedLoAt : timer.bookedHiAt) : 0;
+    var heard = booked && bookedHeard(at);
+    if (!heard) {
+      if (booked) cancelBeeps();
+      unlockAudio();
       beep(strong ? 3 : 1, strong ? 880 : 587);
       tm.root.setAttribute('data-live-beeps', String(Number(tm.root.getAttribute('data-live-beeps') || 0) + 1));
+      // Boka om det som är kvar (det svaga pipet när intervallet är slut).
+      if (booked && timer && timer.running) bookBeeps();
     }
     try {
       if (navigator.vibrate) navigator.vibrate(strong ? [200, 100, 200] : 150);
@@ -1567,7 +1656,12 @@
   }
 
   document.addEventListener('visibilitychange', function () {
-    if (!document.hidden && timer) {
+    if (!timer) return;
+    // Se till att ljudsystemet går, både när skärmen släcks och när den tänds igen.
+    if (timer.running && audio && audio.state !== 'running') {
+      try { audio.resume(); } catch (e) { /* tillåts inte nu */ }
+    }
+    if (!document.hidden) {
       if (timer.running) requestWakeLock();
       timerTick();
     }
@@ -1583,9 +1677,13 @@
     if (soundOn) {
       unlockAudio();
       beep(1, 880);
-      if (timer && timer.running) bookBeeps();
+      if (timer && timer.running) {
+        startKeepAlive();
+        bookBeeps();
+      }
     } else {
       cancelBeeps();
+      stopKeepAlive();
     }
     renderTimer();
   });
