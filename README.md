@@ -147,6 +147,11 @@ A list of teas. Each tea has a **Type**, **Name**, **Temperature**, **Brew time*
 - Teas are grouped by type (green, white, yellow, oolong, black, pu-erh, dark, matcha, herbal, rooibos, then
   your own types and finally *No type*) and sorted by name within the group. Each type has its own colour as a
   stripe on the left of the row.
+- **Variants** of a type don't get their own group or filter button: *Green, jasmine*, *Black, flavored*,
+  *Black, smoked*, *Pu-erh (sheng)* and *Smoked black* all belong to their base type. The variant stays in the
+  text, is shown first in the row (e.g. *Jasmine · China · In the Mood for Tea*) and can be searched for, e.g.
+  *flavored*, *jasmine* or *sheng*. Choosing another type button keeps the variant (*Green, jasmine* → *White,
+  jasmine*).
 - A row shows name, country and shop, a green **Gong fu**, an orange **Refill** and a blue **Untried** badge when ticked, the
   taste on its own line below, and temperature and brew time on the right. Long rows are cut short with *…*;
   when a tea is expanded, name, country, shop and taste wrap, so the whole taste profile is visible without
@@ -179,7 +184,7 @@ A list of teas. Each tea has a **Type**, **Name**, **Temperature**, **Brew time*
   each infusion after the fifth. **White tea** (type White) has its own schedule with longer steeps (infusion 1 is
   20–30 seconds, rising to 40–50 seconds at the fifth), and the rinse can be skipped. The schedule switches as soon
   as the type changes. The schedules live in the code (`BREW_SCHEDULES` in `te.js`) and are not saved in the note.
-- **Search:** the field at the top searches name, type, country, shop and taste. Every word must be found in the
+- **Search:** the field at the top searches name, type (including variants such as *flavored*), country, shop and taste. Every word must be found in the
   tea, so *honey taiwan* finds Taiwanese teas that taste of honey. Case, accents and hyphens don't matter
   (*puerh* finds *Pu-erh*). Search combines with the filters, is cleared with the cross or Escape, and is not saved.
 - **Timer:** at the top of an expanded tea are **Gong fu timer** (when gong fu is ticked) and a button with the
@@ -214,7 +219,7 @@ A list of teas. Each tea has a **Type**, **Name**, **Temperature**, **Brew time*
   With a filter chosen, a new tea gets that type (and gong fu, refill or untried).
 - Enter jumps to the next field in the same tea.
 - The note list in Standard Notes shows, for example, *9 teas, 6 for gong fu, 2 to refill, 1 untried: 3 oolong, 2 green, …*.
-- The version running on the device is shown at the bottom right, e.g. *v2.2.0*.
+- The version running on the device is shown at the bottom right, e.g. *v2.3.0*.
 - **E-ink mode:** the **E-ink** button next to the version makes the app black and white for e-ink screens (e.g.
   Mudita Kompakt): black borders instead of light grey, selected buttons in black with white text, *Gong fu*
   outlined, *Refill* inverted and *Untried* with a dashed outline (so the badges differ by shape, not colour), no type colours, a black seal and no animations (they cause ghosting). The choice
@@ -262,7 +267,7 @@ is saved. Teas with nothing filled in are not saved. Lines that are not fields s
 are in a block with fields, otherwise at the end.
 
 **From the Swedish version (before 2.0.0):** text with the old Swedish field names (`Sort`, `Namn`, `Temperatur`,
-`Bryggtid`, `Land`, `Butik`, `Smak`, `Fyll på`) is still read. Swedish type names (*Grönt* → *Green*), countries
+`Bryggtid`, `Land`, `Butik`, `Smak`, `Fyll på`) is still read. Swedish type names and variants (*Grönt* → *Green*, *Svart, smaksatt* → *Black, flavored*), countries
 (*Kina* → *China*) and common taste words (*honung, blommig* → *honey, floral*) are translated, `ja` becomes `yes`,
 and the note is rewritten in English as soon as it is opened. Words that aren't in the list stay as they are, and
 tea names are never changed. A saved type filter carries over.
@@ -280,7 +285,7 @@ in a note. It needs no internet permission.
 - The list and settings are saved in the app straight away and survive a restart.
 - The screen is kept on while the timer is open.
 - **Back** closes the timer or the Text panel, collapses the tea or clears the search, and otherwise closes the app.
-- The version is the same as the plugin's (e.g. *v2.2.0*), because the app is built from `te/`.
+- The version is the same as the plugin's (e.g. *v2.3.0*), because the app is built from `te/`.
 
 The same pages can be tried in a browser with `te/index.html?standalone=1` (the list is then stored in
 localStorage).

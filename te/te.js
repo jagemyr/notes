@@ -28,7 +28,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '2.2.0';
+  var VERSION = '2.3.0';
 
   // Fristående läge: i Te-appen för Android (som ger window.TeNative) eller med ?standalone=1.
   // Då finns ingen Standard Notes: teerna sparas i appen, och Text-panelen flyttar texten
@@ -108,7 +108,15 @@
     'valnöt': 'walnut', 'sesam': 'sesame', 'kokos': 'coconut', 'sötpotatis': 'sweet potato', 'pumpa': 'pumpkin',
     'stenig': 'stony', 'saftig': 'juicy', 'druva': 'grape', 'vinig': 'winey', 'björnbär': 'blackberry',
     'hallon': 'raspberry', 'blåbär': 'blueberry', 'jordgubbe': 'strawberry', 'svarta vinbär': 'blackcurrant',
-    'rabarber': 'rhubarb', 'gurka': 'cucumber', 'nyklippt gräs': 'freshly cut grass', 'blommig honung': 'floral honey'
+    'rabarber': 'rhubarb', 'gurka': 'cucumber', 'nyklippt gräs': 'freshly cut grass', 'blommig honung': 'floral honey',
+    'apelsinblomma': 'orange blossom', 'apelsinblom': 'orange blossom', 'körsbärsblom': 'cherry blossom',
+    'körsbärsblomma': 'cherry blossom', 'skogig': 'forest floor', 'bärig': 'berry'
+  };
+  // Varianter av en sort i äldre text: "Grönt, smaksatt" → "Green, flavored".
+  var VARIANTS_SV = {
+    'smaksatt': 'flavored', 'smaksatta': 'flavored', 'jasmin': 'jasmine', 'rökt': 'smoked', 'pulver': 'powder',
+    'rostad': 'roasted', 'rostat': 'roasted', 'kolrostad': 'charcoal roasted', 'kolrostat': 'charcoal roasted',
+    'lagrad': 'aged', 'lagrat': 'aged', 'pressad': 'pressed', 'pressat': 'pressed', 'kaka': 'cake'
   };
   var COUNTRIES_SV = {
     'kina': 'China', 'indien': 'India', 'sydkorea': 'South Korea', 'nordkorea': 'North Korea',
@@ -143,6 +151,9 @@
 
   var COUNTRY_PATTERN = new RegExp('(^|[^A-Za-zÀ-ÿ])(' + Object.keys(COUNTRIES_SV)
     .sort(function (a, b) { return b.length - a.length; }).join('|') + ')(?=$|[^A-Za-zÀ-ÿ])', 'gi');
+
+  // Tecknet mellan sorten och varianten: "Green, jasmine", "Pu-erh (shu)", "Black smoked".
+  var VARIANT_SEPARATOR = /[\s,(/–—-]/;
 
   // Ordningen här är ordningen i anteckningen. Alias gör att rader skrivna för hand också känns igen.
   var FIELDS = [
@@ -360,12 +371,36 @@
   }
 
   function knownSort(text) {
-    var lower = oneLine(text).toLowerCase();
+    var split = splitSort(text);
+    return split ? split.sort : null;
+  }
+
+  /**
+   * Sorten och en eventuell variant: "Green, jasmine" → Green + "jasmine", "Pu-erh (shu)" →
+   * Pu-erh + "shu", "Smoked black" → Black + "Smoked". Varianten ger ingen egen grupp eller
+   * filterknapp; den står kvar i texten, visas i raden och går att söka på.
+   */
+  function splitSort(text) {
+    var value = oneLine(text);
+    var lower = value.toLowerCase();
     if (!lower) return null;
-    for (var i = 0; i < SORTS.length; i++) {
-      if (SORTS[i].aliases.indexOf(lower) !== -1) return SORTS[i];
-    }
-    return null;
+    var best = null;
+    SORTS.forEach(function (sort) {
+      sort.aliases.forEach(function (alias) {
+        var rest = null;
+        if (lower === alias) {
+          rest = '';
+        } else if (lower.indexOf(alias) === 0 && VARIANT_SEPARATOR.test(lower.charAt(alias.length))) {
+          rest = value.slice(alias.length);
+        } else if (lower.length > alias.length && lower.slice(-alias.length) === alias &&
+                   VARIANT_SEPARATOR.test(lower.charAt(lower.length - alias.length - 1))) {
+          rest = value.slice(0, value.length - alias.length);
+        }
+        if (rest !== null && (!best || alias.length > best.alias.length)) best = { sort: sort, alias: alias, rest: rest };
+      });
+    });
+    if (!best) return null;
+    return { sort: best.sort, alias: best.alias, variant: best.rest.replace(/[()]/g, ' ').replace(/^[\s,/–—-]+|[\s,/–—-]+$/g, '').replace(/\s+/g, ' ') };
   }
 
   /** Gruppen för en sort: { key, label, color, rank, index }. */
@@ -518,6 +553,15 @@
     return { teas: teas, rest: restBlocks.join('\n\n'), converted: converted };
   }
 
+  function variantToEnglish(text) {
+    var whole = VARIANTS_SV[text.toLowerCase()];
+    if (whole) return whole;
+    return text.split(/(\s*,\s*|\s+)/).map(function (part) {
+      var lower = part.toLowerCase();
+      return VARIANTS_SV[lower] || TASTES_SV[lower] || part;
+    }).join('');
+  }
+
   /**
    * Svenska sortnamn, länder och smakord i ett te blir engelska ("Grönt" → "Green",
    * "Kina" → "China", "honung, blommig" → "honey, floral"). Returnerar true om något ändrades.
@@ -525,10 +569,14 @@
   function toEnglish(tea) {
     var v = tea.values;
     var before = v.sort + '|' + v.land + '|' + v.smak;
-    var sortText = oneLine(v.sort).toLowerCase();
-    SORTS.forEach(function (sort) {
-      if (sort.sv.indexOf(sortText) !== -1) v.sort = sort.label;
-    });
+    // Svensk sort, även med variant: "Grönt" → "Green", "Svart, smaksatt" → "Black, flavored".
+    var split = splitSort(v.sort);
+    if (split) {
+      var variant = split.variant ? variantToEnglish(split.variant) : '';
+      if (split.sort.sv.indexOf(split.alias) !== -1 || variant !== split.variant) {
+        v.sort = split.sort.label + (variant ? ', ' + variant : '');
+      }
+    }
     v.land = String(v.land || '').replace(COUNTRY_PATTERN, function (all, lead, word) {
       return lead + COUNTRIES_SV[word.toLowerCase()];
     });
@@ -854,6 +902,11 @@
     if (button.hasAttribute('data-value')) {
       var key = button.closest('[data-suggest]').getAttribute('data-suggest');
       var chosen = button.getAttribute('data-value');
+      // En sort med variant behåller varianten: "Green, jasmine" + Black → "Black, jasmine".
+      var current = key === 'sort' ? splitSort(tea.values.sort) : null;
+      if (current && current.variant) {
+        chosen = current.sort.label === chosen ? oneLine(tea.values.sort) : chosen + ', ' + current.variant;
+      }
       // Smakorden läggs till och tas bort; de andra knapparna ersätter fältet.
       tea.values[key] = key === 'smak' ? toggleTaste(tea.values.smak, chosen) : chosen;
       touch(tea);
@@ -1369,7 +1422,13 @@
     // Sorten står i gruppens rubrik; den syns i raden bara om den har ändrats sedan dess.
     var section = card.closest('.group');
     var meta = [];
-    if (oneLine(tea.values.sort) && section && section.getAttribute('data-group') !== g.key) meta.push(g.label);
+    var sortText = oneLine(tea.values.sort);
+    var split = splitSort(sortText);
+    if (sortText && section && section.getAttribute('data-group') !== g.key) {
+      meta.push(split && split.variant ? capitalize(sortText) : g.label);
+    } else if (split && split.variant) {
+      meta.push(capitalize(split.variant));
+    }
     meta.push(oneLine(tea.values.land), oneLine(tea.values.butik));
     var metaText = meta.filter(Boolean).join(' · ');
     card.querySelector('.s-meta').textContent = metaText;
