@@ -1,19 +1,19 @@
 <!doctype html>
-<html lang="sv">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Te (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=1.11.0">
+  <title>Tea (jagemyr)</title>
+  <link rel="stylesheet" href="te.css?v=2.0.0">
 </head>
 <body>
-  <nav class="filters" id="filters-bar" aria-label="Sök och filtrera teer" hidden>
+  <nav class="filters" id="filters-bar" aria-label="Search and filter teas" hidden>
     <div class="search-row">
-      <span class="seal seal-top" lang="zh-Hans" title="茶 – chá, te" aria-hidden="true">茶</span>
+      <span class="seal seal-top" lang="zh-Hans" title="茶 – chá, tea" aria-hidden="true">茶</span>
       <div class="search">
         <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <input type="search" id="search" placeholder="Sök namn, land, smak…" aria-label="Sök te" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search">
-        <button type="button" class="search-clear" id="search-clear" aria-label="Rensa sökningen" hidden>
+        <input type="search" id="search" placeholder="Search name, country, taste…" aria-label="Search teas" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search">
+        <button type="button" class="search-clear" id="search-clear" aria-label="Clear search" hidden>
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
         </button>
       </div>
@@ -23,17 +23,17 @@
       <div class="chip-row" id="filters"></div>
       <span class="chip-divider" id="chip-divider" aria-hidden="true"></span>
       <button type="button" class="chip chip-toggle" id="gongfu-filter" aria-pressed="false">Gong fu</button>
-      <button type="button" class="chip chip-toggle chip-refill" id="refill-filter" aria-pressed="false">Fyll på</button>
+      <button type="button" class="chip chip-toggle chip-refill" id="refill-filter" aria-pressed="false">Refill</button>
     </div>
   </nav>
 
   <main class="page">
     <div class="notice" id="notice" hidden>
-      Den här sidan är en editor för Standard Notes och väntar på att appen ska ansluta.
-      Installera den med adressen till <code>ext.json</code> under Preferences → Plugins → Install Custom Plugin.
+      This page is an editor for Standard Notes and is waiting for the app to connect.
+      Install it with the address of <code>ext.json</code> under Preferences → Plugins → Install Custom Plugin.
       <pre class="diag" id="diag"></pre>
     </div>
-    <div class="locked-banner" id="locked-banner" hidden>Anteckningen är låst.</div>
+    <div class="locked-banner" id="locked-banner" hidden>The note is locked.</div>
 
     <div class="groups" id="groups"></div>
     <p class="empty" id="empty" hidden></p>
@@ -41,21 +41,21 @@
     <div class="add-row">
       <button type="button" class="add-tea" id="add-tea" hidden>
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-        Nytt te
+        New tea
       </button>
     </div>
   </main>
 
   <footer class="status" role="status" aria-live="polite">
-    <span id="count">0 teer</span>
+    <span id="count">0 teas</span>
     <span class="status-right">
-      <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
-      <button type="button" class="pill-btn" id="text-toggle" title="Hela listan som text: klistra in från eller kopiera till Standard Notes" hidden>Text</button>
-      <button type="button" class="eink-toggle" id="eink-toggle" aria-pressed="false" title="E-ink-läge: svart och vitt, för e-ink-skärmar">
+      <span id="save-state" class="save-state">Waiting for Standard Notes…</span>
+      <button type="button" class="pill-btn" id="text-toggle" title="The whole list as text: paste from or copy to Standard Notes" hidden>Text</button>
+      <button type="button" class="eink-toggle" id="eink-toggle" aria-pressed="false" title="E-ink mode: black and white, for e-ink screens">
         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg>
         E-ink
       </button>
-      <span class="version" id="version" title="Version av Te-pluginet på den här enheten"></span>
+      <span class="version" id="version" title="Version of the Tea plugin on this device"></span>
     </span>
   </footer>
 
@@ -76,7 +76,7 @@
           <span class="s-sub">
             <span class="s-meta"></span>
             <span class="s-gongfu" hidden>Gong fu</span>
-            <span class="s-refill" hidden>Fyll på</span>
+            <span class="s-refill" hidden>Refill</span>
           </span>
           <span class="s-taste"></span>
         </span>
@@ -89,56 +89,56 @@
 
       <div class="details" hidden>
         <div class="brew-bar" hidden>
-          <button type="button" class="timer-btn" data-action="timer-gongfu" hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>Gong fu-timer</button>
+          <button type="button" class="timer-btn" data-action="timer-gongfu" hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>Gong fu timer</button>
           <button type="button" class="timer-btn" data-action="timer-western" hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg><span class="timer-btn-label"></span></button>
         </div>
 
         <!-- Fälten och valknapparna syns bara efter Ändra, så att ett tryck när man scrollar inte byter sort. -->
         <div class="edit-fields" hidden>
           <div class="field">
-            <span>Sort</span>
-            <input type="text" data-key="sort" aria-label="Sort" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+            <span>Type</span>
+            <input type="text" data-key="sort" aria-label="Type" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
             <div class="suggest" data-suggest="sort"></div>
           </div>
 
           <label class="field">
-            <span>Namn</span>
+            <span>Name</span>
             <input type="text" data-key="namn" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
           </label>
 
           <div class="field">
-            <span>Temperatur</span>
+            <span>Temperature</span>
             <div class="temp-row">
-              <input type="text" data-key="temperatur" aria-label="Temperatur i grader" autocomplete="off" enterkeyhint="next">
+              <input type="text" data-key="temperatur" aria-label="Temperature in degrees" autocomplete="off" enterkeyhint="next">
               <span class="unit" aria-hidden="true">°C</span>
             </div>
             <div class="suggest" data-suggest="temperatur"></div>
           </div>
 
           <div class="field">
-            <span>Bryggtid</span>
+            <span>Brew time</span>
             <div class="temp-row">
-              <input type="text" data-key="bryggtid" aria-label="Bryggtid i minuter, vanlig bryggning" autocomplete="off" enterkeyhint="next">
+              <input type="text" data-key="bryggtid" aria-label="Brew time in minutes, western brewing" autocomplete="off" enterkeyhint="next">
               <span class="unit" aria-hidden="true">min</span>
             </div>
             <div class="suggest" data-suggest="bryggtid"></div>
           </div>
 
           <div class="field">
-            <span>Land</span>
-            <input type="text" data-key="land" aria-label="Land" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+            <span>Country</span>
+            <input type="text" data-key="land" aria-label="Country" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
             <div class="suggest" data-suggest="land"></div>
           </div>
 
           <div class="field">
-            <span>Butik</span>
-            <input type="text" data-key="butik" aria-label="Butik" placeholder="Var du köpte teet" autocomplete="off" autocapitalize="words" enterkeyhint="next">
+            <span>Shop</span>
+            <input type="text" data-key="butik" aria-label="Shop" placeholder="Where you bought the tea" autocomplete="off" autocapitalize="words" enterkeyhint="next">
             <div class="suggest" data-suggest="butik"></div>
           </div>
 
           <div class="field">
-            <span>Smak</span>
-            <input type="text" data-key="smak" aria-label="Smak" placeholder="t.ex. honung, persika" autocomplete="off" autocapitalize="none" enterkeyhint="done">
+            <span>Taste</span>
+            <input type="text" data-key="smak" aria-label="Taste" placeholder="e.g. honey, peach" autocomplete="off" autocapitalize="none" enterkeyhint="done">
             <div class="suggest" data-suggest="smak"></div>
           </div>
         </div>
@@ -146,11 +146,11 @@
         <div class="toggles">
           <label class="toggle toggle-refill">
             <input type="checkbox" class="check refill-check" data-flag="fyllpa">
-            <span>Behöver fyllas på</span>
+            <span>Needs refill</span>
           </label>
           <label class="toggle toggle-gongfu">
             <input type="checkbox" class="check gongfu-check" data-flag="gongfu">
-            <span>Passar för gong fu</span>
+            <span>Good for gong fu</span>
           </label>
         </div>
 
@@ -159,15 +159,15 @@
           <caption></caption>
           <tbody></tbody>
         </table>
-        <p class="brew-hint" hidden>Tryck på ett steg för att starta timern där.</p>
+        <p class="brew-hint" hidden>Tap a step to start the timer there.</p>
 
         <div class="d-actions">
-          <button type="button" class="link-btn" data-action="collapse">Klar</button>
+          <button type="button" class="link-btn" data-action="collapse">Done</button>
           <button type="button" class="link-btn edit-btn" data-action="edit" hidden>
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-            Ändra
+            Edit
           </button>
-          <button type="button" class="link-btn danger" data-action="remove">Ta bort te</button>
+          <button type="button" class="link-btn danger" data-action="remove">Remove tea</button>
         </div>
       </div>
     </li>
@@ -176,31 +176,31 @@
   <!-- Text-panelen (bara i den fristående appen): hela listan som text, in och ut. -->
   <div class="textpanel" id="textpanel" role="dialog" aria-modal="true" aria-labelledby="textpanel-title" hidden>
     <div class="textpanel-head">
-      <h2 id="textpanel-title">Listan som text</h2>
-      <button type="button" class="timer-icon" id="text-close" aria-label="Stäng">
+      <h2 id="textpanel-title">The list as text</h2>
+      <button type="button" class="timer-icon" id="text-close" aria-label="Close">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
       </button>
     </div>
-    <p class="textpanel-hint">Klistra in texten från teanteckningen i Standard Notes och tryck <b>Spara</b>, eller kopiera härifrån och klistra in där. Spara ersätter hela listan i appen.</p>
-    <textarea id="text-area" spellcheck="false" autocapitalize="none" autocomplete="off" aria-label="Listan som text"></textarea>
+    <p class="textpanel-hint">Paste the text from your tea note in Standard Notes and tap <b>Save</b>, or copy it from here and paste it there. Save replaces the whole list in the app.</p>
+    <textarea id="text-area" spellcheck="false" autocapitalize="none" autocomplete="off" aria-label="The list as text"></textarea>
     <div class="textpanel-actions">
-      <button type="button" class="link-btn" id="text-copy">Kopiera allt</button>
-      <button type="button" class="timer-main textpanel-save" id="text-save">Spara</button>
+      <button type="button" class="link-btn" id="text-copy">Copy all</button>
+      <button type="button" class="timer-main textpanel-save" id="text-save">Save</button>
     </div>
   </div>
 
   <!-- Bryggtimern. Fylls i och styrs av te.js; sparar inget i anteckningen. -->
   <div class="timer" id="timer" role="dialog" aria-modal="true" aria-labelledby="timer-tea" tabindex="-1" hidden>
     <div class="timer-head">
-      <span class="seal seal-timer" lang="zh-Hans" title="茶 – chá, te" aria-hidden="true">茶</span>
+      <span class="seal seal-timer" lang="zh-Hans" title="茶 – chá, tea" aria-hidden="true">茶</span>
       <div class="timer-titles">
         <p class="timer-tea" id="timer-tea"></p>
         <p class="timer-step"><span id="timer-step"></span> <span class="timer-note" id="timer-note"></span></p>
       </div>
-      <button type="button" class="timer-icon" id="timer-sound" aria-label="Ljud" aria-pressed="true" title="Ljud av/på">
+      <button type="button" class="timer-icon" id="timer-sound" aria-label="Sound" aria-pressed="true" title="Sound on/off">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 9.5V14a1 1 0 0 1-1 1H4v1h16v-1h-1a1 1 0 0 1-1-1V9.5a6 6 0 0 0-12 0zM10 18.5a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path class="sound-off" d="M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
-      <button type="button" class="timer-icon" id="timer-close" aria-label="Stäng timern">
+      <button type="button" class="timer-icon" id="timer-close" aria-label="Close timer">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
       </button>
     </div>
@@ -208,7 +208,7 @@
     <div class="timer-body">
     <p class="timer-temp" id="timer-temp" hidden>
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M10 4.5a2 2 0 0 1 4 0v9.3a4 4 0 1 1-4 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="17" r="1.6" fill="currentColor"/><path d="M12 15.4V9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span class="visually-hidden">Vattentemperatur </span><span id="timer-temp-value"></span>
+      <span class="visually-hidden">Water temperature </span><span id="timer-temp-value"></span>
     </p>
     <div class="timer-dial">
       <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
@@ -223,20 +223,20 @@
     </div>
 
     <div class="timer-controls">
-      <button type="button" class="timer-nav" id="timer-prev" aria-label="Föregående steg">
+      <button type="button" class="timer-nav" id="timer-prev" aria-label="Previous step">
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <button type="button" class="timer-main" id="timer-main">Starta</button>
-      <button type="button" class="timer-nav" id="timer-next" aria-label="Nästa steg">
+      <button type="button" class="timer-main" id="timer-main">Start</button>
+      <button type="button" class="timer-nav" id="timer-next" aria-label="Next step">
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
 
-    <div class="timer-steps" id="timer-steps" role="group" aria-label="Steg"></div>
+    <div class="timer-steps" id="timer-steps" role="group" aria-label="Steps"></div>
     </div>
   </div>
 
-  <script src="vendor/component-relay.js?v=1.11.0"></script>
-  <script src="te.js?v=1.11.0"></script>
+  <script src="vendor/component-relay.js?v=2.0.0"></script>
+  <script src="te.js?v=2.0.0"></script>
 </body>
 </html>

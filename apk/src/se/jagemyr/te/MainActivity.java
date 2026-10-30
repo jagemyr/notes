@@ -153,7 +153,7 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() {
                     ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                    if (cm != null) cm.setPrimaryClip(ClipData.newPlainText("Te", text));
+                    if (cm != null) cm.setPrimaryClip(ClipData.newPlainText("Tea", text));
                 }
             });
         }

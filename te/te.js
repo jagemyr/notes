@@ -1,21 +1,23 @@
 /*
- * Te (jagemyr) – teer i Standard Notes. En anteckning håller en lista med teer, var och
- * ett med Sort, Namn, Temperatur, Bryggtid (vanlig bryggning), Land, Butik, Smak, om
- * teet passar för gong fu och om det behöver fyllas på.
+ * Tea (jagemyr) – teer i Standard Notes. En anteckning håller en lista med teer, var och
+ * ett med Type, Name, Temperature, Brew time (vanlig bryggning), Country, Shop, Taste, om
+ * teet passar för gong fu och om det behöver fyllas på. Gränssnittet och texten är på
+ * engelska; äldre text med svenska fältnamn, sorter, länder och smakord läses in och skrivs
+ * om till engelska (se toEnglish).
  *
  * Allt sparas som vanlig text i anteckningen: ett block per te, en rad per fält och en
  * tom rad mellan teerna. Ordningen i texten är den ordning teerna lades till; i appen
  * grupperas de per sort och sorteras på namn.
  *
- *   Sort: Oolong
- *   Namn: Dong Ding
- *   Temperatur: 95
- *   Bryggtid: 2-3
- *   Land: Taiwan
- *   Butik: In the Mood for Tea
- *   Smak: honung, blommig
- *   Gong fu: ja
- *   Fyll på:
+ *   Type: Oolong
+ *   Name: Dong Ding
+ *   Temperature: 95
+ *   Brew time: 2-3
+ *   Country: Taiwan
+ *   Shop: In the Mood for Tea
+ *   Taste: honey, floral
+ *   Gong fu: yes
+ *   Refill:
  *
  * Rader som inte är fält (t.ex. något som skrivits i en annan editor) ligger kvar
  * oförändrade: i sitt te om de står i ett block med fält, annars sist.
@@ -25,7 +27,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.11.0';
+  var VERSION = '2.0.0';
 
   // Fristående läge: i Te-appen för Android (som ger window.TeNative) eller med ?standalone=1.
   // Då finns ingen Standard Notes: teerna sparas i appen, och Text-panelen flyttar texten
@@ -49,27 +51,71 @@
   var NO_SORT = 'none';
 
   // Sorterna i den ordning grupperna visas. Alias gör att andra stavningar hamnar i rätt grupp
-  // (texten i anteckningen ändras inte). Färgen är kanten till vänster och pricken i rubriken.
+  // (texten i anteckningen ändras inte, utom svenska namn som blir engelska). Färgen är kanten
+  // till vänster och pricken i rubriken. id är gruppens nyckel (och sparas i filtret).
   var SORTS = [
-    { label: 'Grönt', color: '#4f9a3a', aliases: ['grönt', 'grön', 'gröna', 'grönt te', 'green', 'green tea', 'lü cha', 'lu cha'] },
-    { label: 'Vitt', color: '#a39b86', aliases: ['vitt', 'vit', 'vitt te', 'white', 'white tea', 'bai cha'] },
-    { label: 'Gult', color: '#cfa21d', aliases: ['gult', 'gul', 'gult te', 'yellow', 'yellow tea', 'huang cha'] },
-    { label: 'Oolong', color: '#c47a1f', aliases: ['oolong', 'wulong', 'wu long', 'oolong te', 'qing cha'] },
-    { label: 'Svart', color: '#a43c2a', aliases: ['svart', 'svart te', 'black', 'black tea', 'hong cha'] },
-    { label: 'Pu-erh', color: '#7a4a28', aliases: ['pu-erh', 'puerh', 'pu erh', 'pu\'er', 'puer', 'pu-er', 'sheng', 'shou', 'sheng puerh', 'shou puerh'] },
-    { label: 'Mörkt', color: '#5c4434', aliases: ['mörkt', 'mörk', 'mörkt te', 'dark', 'dark tea', 'hei cha', 'heicha'] },
-    { label: 'Matcha', color: '#62a82f', aliases: ['matcha'] },
-    { label: 'Örtte', color: '#8a6fb5', aliases: ['örtte', 'örter', 'ört', 'tisane', 'herbal'] },
-    { label: 'Rooibos', color: '#c0502e', aliases: ['rooibos', 'rotbusch'] }
+    { id: 'green', label: 'Green', color: '#4f9a3a', aliases: ['green', 'green tea', 'lü cha', 'lu cha'], sv: ['grönt', 'grön', 'gröna', 'grönt te'] },
+    { id: 'white', label: 'White', color: '#a39b86', aliases: ['white', 'white tea', 'bai cha'], sv: ['vitt', 'vit', 'vitt te'] },
+    { id: 'yellow', label: 'Yellow', color: '#cfa21d', aliases: ['yellow', 'yellow tea', 'huang cha'], sv: ['gult', 'gul', 'gult te'] },
+    { id: 'oolong', label: 'Oolong', color: '#c47a1f', aliases: ['oolong', 'wulong', 'wu long', 'oolong tea', 'qing cha'], sv: ['oolong te'] },
+    { id: 'black', label: 'Black', color: '#a43c2a', aliases: ['black', 'black tea', 'hong cha', 'red tea'], sv: ['svart', 'svart te'] },
+    { id: 'puerh', label: 'Pu-erh', color: '#7a4a28', aliases: ['pu-erh', 'puerh', 'pu erh', 'pu\'er', 'puer', 'pu-er', 'sheng', 'shou', 'sheng puerh', 'shou puerh'], sv: [] },
+    { id: 'dark', label: 'Dark', color: '#5c4434', aliases: ['dark', 'dark tea', 'hei cha', 'heicha'], sv: ['mörkt', 'mörk', 'mörkt te'] },
+    { id: 'matcha', label: 'Matcha', color: '#62a82f', aliases: ['matcha'], sv: [] },
+    { id: 'herbal', label: 'Herbal', color: '#8a6fb5', aliases: ['herbal', 'herbal tea', 'tisane', 'herbs'], sv: ['örtte', 'örter', 'ört'] },
+    { id: 'rooibos', label: 'Rooibos', color: '#c0502e', aliases: ['rooibos', 'redbush'], sv: ['rotbusch'] }
   ];
+  // Svenska sortnamn känns också igen (och skrivs om till engelska när teet läses in).
+  SORTS.forEach(function (sort) { sort.aliases = sort.aliases.concat(sort.sv); });
 
   // Förslag under fälten. Egna knappar i stället för <datalist> (se README).
   var TEMPS = ['70', '75', '80', '85', '90', '95', '100'];
   var TIMES = ['1', '2', '2-3', '3', '3-4', '4', '5'];
   // Smakord: ett tryck lägger till ordet i Smak, ett till tar bort det.
-  var TASTES = ['blommig', 'fruktig', 'citrus', 'honung', 'söt', 'nötig', 'rostad', 'rökig', 'maltig',
-    'jordig', 'träig', 'gräsig', 'mineralisk', 'kryddig'];
-  var COUNTRIES = ['Kina', 'Taiwan', 'Japan', 'Indien', 'Sri Lanka', 'Nepal', 'Korea', 'Vietnam', 'Kenya'];
+  var TASTES = ['floral', 'fruity', 'citrus', 'honey', 'sweet', 'nutty', 'roasted', 'smoky', 'malty',
+    'earthy', 'woody', 'grassy', 'mineral', 'spicy'];
+  var COUNTRIES = ['China', 'Taiwan', 'Japan', 'India', 'Sri Lanka', 'Nepal', 'Korea', 'Vietnam', 'Kenya'];
+
+  // Svenska smakord och länder i äldre text, översatta när teet läses in. Ord som inte finns
+  // här står kvar som de är.
+  var TASTES_SV = {
+    'blommig': 'floral', 'blommor': 'flowers', 'fruktig': 'fruity', 'honung': 'honey', 'honungssöt': 'honey',
+    'söt': 'sweet', 'sötma': 'sweetness', 'nötig': 'nutty', 'rostad': 'roasted', 'rökig': 'smoky', 'maltig': 'malty',
+    'jordig': 'earthy', 'träig': 'woody', 'gräsig': 'grassy', 'mineralisk': 'mineral', 'mineralrik': 'mineral',
+    'kryddig': 'spicy', 'grön': 'green', 'marin': 'marine', 'tropisk': 'tropical', 'skogsbotten': 'forest floor',
+    'bark': 'bark', 'krämig': 'creamy', 'gräddig': 'creamy', 'persika': 'peach', 'mörk frukt': 'dark fruit',
+    'muskot': 'nutmeg', 'muskatell': 'muscatel', 'syrlig': 'tart', 'färsk frukt': 'fresh fruit',
+    'torkad frukt': 'dried fruit', 'vanilj': 'vanilla', 'kanel': 'cinnamon', 'choklad': 'chocolate',
+    'mörk choklad': 'dark chocolate', 'kakao': 'cocoa', 'karamell': 'caramel', 'kola': 'toffee', 'smörig': 'buttery',
+    'smör': 'butter', 'mjölkig': 'milky', 'läder': 'leather', 'tobak': 'tobacco', 'aprikos': 'apricot',
+    'plommon': 'plum', 'körsbär': 'cherry', 'äpple': 'apple', 'päron': 'pear', 'melon': 'melon',
+    'honungsmelon': 'honeydew', 'ananas': 'pineapple', 'litchi': 'lychee', 'bär': 'berries', 'russin': 'raisin',
+    'dadel': 'date', 'dadlar': 'dates', 'fikon': 'fig', 'apelsin': 'orange', 'citron': 'lemon', 'bergamott': 'bergamot',
+    'jasmin': 'jasmine', 'orkidé': 'orchid', 'ros': 'rose', 'lavendel': 'lavender', 'hö': 'hay', 'halm': 'straw',
+    'spenat': 'spinach', 'sparris': 'asparagus', 'ärtor': 'peas', 'grönsaker': 'vegetal', 'vegetabilisk': 'vegetal',
+    'tång': 'seaweed', 'sjögräs': 'seaweed', 'salt': 'salty', 'saltig': 'salty', 'bitter': 'bitter',
+    'besk': 'bitter', 'sträv': 'astringent', 'torr': 'dry', 'fyllig': 'full-bodied', 'lätt': 'light', 'mjuk': 'smooth',
+    'len': 'silky', 'silkeslen': 'silky', 'fräsch': 'fresh', 'frisk': 'fresh', 'ren': 'clean', 'djup': 'deep',
+    'kraftig': 'strong', 'rund': 'round', 'komplex': 'complex', 'kamfer': 'camphor', 'mint': 'mint',
+    'mynta': 'mint', 'pepparmynta': 'peppermint', 'pepprig': 'peppery', 'ingefära': 'ginger', 'lakrits': 'liquorice',
+    'anis': 'anise', 'kamomill': 'chamomile', 'ängsblommor': 'meadow flowers', 'örtig': 'herbal', 'kådig': 'resinous',
+    'tall': 'pine', 'ceder': 'cedar', 'mossa': 'moss', 'mossig': 'mossy', 'svamp': 'mushroom', 'skog': 'forest',
+    'källare': 'cellar', 'brödig': 'bready', 'bröd': 'bread', 'kex': 'biscuit', 'spannmål': 'grain',
+    'rostat ris': 'roasted rice', 'kastanj': 'chestnut', 'mandel': 'almond', 'hasselnöt': 'hazelnut',
+    'valnöt': 'walnut', 'sesam': 'sesame', 'kokos': 'coconut', 'sötpotatis': 'sweet potato', 'pumpa': 'pumpkin',
+    'stenig': 'stony', 'saftig': 'juicy', 'druva': 'grape', 'vinig': 'winey', 'björnbär': 'blackberry',
+    'hallon': 'raspberry', 'blåbär': 'blueberry', 'jordgubbe': 'strawberry', 'svarta vinbär': 'blackcurrant',
+    'rabarber': 'rhubarb', 'gurka': 'cucumber', 'nyklippt gräs': 'freshly cut grass', 'blommig honung': 'floral honey'
+  };
+  var COUNTRIES_SV = {
+    'kina': 'China', 'indien': 'India', 'sydkorea': 'South Korea', 'nordkorea': 'North Korea',
+    'indonesien': 'Indonesia', 'sydafrika': 'South Africa', 'georgien': 'Georgia', 'turkiet': 'Turkey',
+    'brasilien': 'Brazil', 'egypten': 'Egypt', 'grekland': 'Greece', 'tyskland': 'Germany', 'frankrike': 'France',
+    'sverige': 'Sweden', 'marocko': 'Morocco', 'nya zeeland': 'New Zealand', 'australien': 'Australia',
+    'ryssland': 'Russia', 'azerbajdzjan': 'Azerbaijan', 'spanien': 'Spain', 'italien': 'Italy', 'mexiko': 'Mexico',
+    'kambodja': 'Cambodia', 'sydamerika': 'South America', 'afrika': 'Africa', 'asien': 'Asia', 'thailand': 'Thailand',
+    'ungern': 'Hungary', 'polen': 'Poland', 'kroatien': 'Croatia', 'bulgarien': 'Bulgaria'
+  };
   // Butiker som alltid finns som knappar; butiker som skrivits in på andra teer läggs till efter dem.
   var SHOPS = ['In the Mood for Tea', 'The Tea Centre'];
 
@@ -85,30 +131,40 @@
       extra: 10
     },
     white: {
-      title: 'Gong fu · vitt te',
+      title: 'Gong fu · white tea',
       rinse: { note: '(pouring away, can be skipped)', lo: 10, hi: 10 },
       infusions: [[20, 30], [15, 20], [20, 25], [30, 35], [40, 50]],
       extra: 10
     }
   };
 
+  var COUNTRY_PATTERN = new RegExp('(^|[^A-Za-zÀ-ÿ])(' + Object.keys(COUNTRIES_SV)
+    .sort(function (a, b) { return b.length - a.length; }).join('|') + ')(?=$|[^A-Za-zÀ-ÿ])', 'gi');
+
   // Ordningen här är ordningen i anteckningen. Alias gör att rader skrivna för hand också känns igen.
   var FIELDS = [
-    { key: 'sort', label: 'Sort', aliases: ['sort', 'tesort', 'typ'] },
-    { key: 'namn', label: 'Namn', aliases: ['namn', 'te', 'name', 'benämning'] },
-    { key: 'temperatur', label: 'Temperatur', aliases: ['temperatur', 'temp', 'vattentemperatur', 'vattentemp', 'grader'] },
+    { key: 'sort', label: 'Type', aliases: ['type', 'tea type', 'kind', 'category', 'sort', 'tesort', 'typ'] },
+    { key: 'namn', label: 'Name', aliases: ['name', 'tea', 'tea name', 'namn', 'te', 'benämning'] },
+    { key: 'temperatur', label: 'Temperature', aliases: ['temperature', 'temp', 'water temperature', 'water temp', 'degrees', 'temperatur', 'vattentemperatur', 'vattentemp', 'grader'] },
     // Tiden för vanlig bryggning; gong fu har sitt eget schema.
-    { key: 'bryggtid', label: 'Bryggtid', aliases: ['bryggtid', 'tid', 'dragtid', 'dragningstid', 'steep', 'steep time', 'minuter'] },
-    { key: 'land', label: 'Land', aliases: ['land', 'ursprung', 'ursprungsland', 'country'] },
+    { key: 'bryggtid', label: 'Brew time', aliases: ['brew time', 'brewing time', 'steep time', 'steeping time', 'steep', 'time', 'minutes', 'bryggtid', 'tid', 'dragtid', 'dragningstid', 'minuter'] },
+    { key: 'land', label: 'Country', aliases: ['country', 'origin', 'country of origin', 'land', 'ursprung', 'ursprungsland'] },
     // Var teet köptes, fritt namn.
-    { key: 'butik', label: 'Butik', aliases: ['butik', 'köpt', 'köpt i', 'köpt på', 'köpt hos', 'köpställe', 'inköpsställe', 'affär', 'handlare', 'shop', 'store'] },
+    { key: 'butik', label: 'Shop', aliases: ['shop', 'store', 'bought at', 'bought from', 'vendor', 'seller', 'butik', 'köpt', 'köpt i', 'köpt på', 'köpt hos', 'köpställe', 'inköpsställe', 'affär', 'handlare'] },
     // Smakord åtskilda med kommatecken.
-    { key: 'smak', label: 'Smak', aliases: ['smak', 'smaker', 'smakprofil', 'smaknoter', 'smaknot', 'smakbeskrivning', 'flavor', 'flavour', 'taste', 'tasting notes'] },
-    // flag: sparas som "ja" eller tomt.
-    { key: 'gongfu', label: 'Gong fu', flag: true, aliases: ['gong fu', 'gongfu', 'gong-fu', 'gong fu cha', 'gongfu cha', 'passar för gong fu'] },
+    { key: 'smak', label: 'Taste', aliases: ['taste', 'tastes', 'flavor', 'flavour', 'flavors', 'flavours', 'tasting notes', 'taste profile', 'flavor profile', 'smak', 'smaker', 'smakprofil', 'smaknoter', 'smaknot', 'smakbeskrivning'] },
+    // flag: sparas som "yes" eller tomt.
+    { key: 'gongfu', label: 'Gong fu', flag: true, aliases: ['gong fu', 'gongfu', 'gong-fu', 'gong fu cha', 'gongfu cha', 'good for gong fu', 'passar för gong fu'] },
     // Teet håller på att ta slut och ska köpas igen.
-    { key: 'fyllpa', label: 'Fyll på', flag: true, aliases: ['fyll på', 'fyll pa', 'fyllpå', 'påfyllning', 'behöver fyllas på', 'snart slut', 'slut', 'köp', 'köpa', 'köp mer', 'köpa mer'] }
+    { key: 'fyllpa', label: 'Refill', flag: true, aliases: ['refill', 'needs refill', 'needs refilling', 'restock', 'running low', 'buy again', 'buy more', 'reorder', 'fyll på', 'fyll pa', 'fyllpå', 'påfyllning', 'behöver fyllas på', 'snart slut', 'slut', 'köp', 'köpa', 'köp mer', 'köpa mer'] }
   ];
+  // Fältnamn som bara finns i äldre, svensk text: en sådan text skrivs om till engelska.
+  var SWEDISH_LABELS = ['sort', 'tesort', 'typ', 'namn', 'te', 'benämning', 'temperatur', 'vattentemperatur',
+    'vattentemp', 'grader', 'bryggtid', 'tid', 'dragtid', 'dragningstid', 'minuter', 'land', 'ursprung',
+    'ursprungsland', 'butik', 'köpt', 'köpt i', 'köpt på', 'köpt hos', 'köpställe', 'inköpsställe', 'affär',
+    'handlare', 'smak', 'smaker', 'smakprofil', 'smaknoter', 'smaknot', 'smakbeskrivning', 'passar för gong fu',
+    'fyll på', 'fyll pa', 'fyllpå', 'påfyllning', 'behöver fyllas på', 'snart slut', 'slut', 'köp', 'köpa',
+    'köp mer', 'köpa mer'];
   var TEXT_KEYS = ['sort', 'namn', 'temperatur', 'bryggtid', 'land', 'butik', 'smak'];
 
   var el = {
@@ -154,7 +210,7 @@
     frozen: null,
     confirmIndex: -1,
     confirmTimer: null,
-    filter: loadPref(FILTER_KEY) || null,
+    filter: migrateFilter(loadPref(FILTER_KEY)),
     gongfuOnly: loadPref(GONGFU_KEY) === '1',
     refillOnly: loadPref(REFILL_KEY) === '1',
     // Sökningen sparas inte; den gäller tills man rensar den eller byter anteckning.
@@ -250,7 +306,7 @@
 
   /** Läser in inställningarna igen när Standard Notes har skickat pluginets data. */
   function reloadPrefs() {
-    state.filter = loadPref(FILTER_KEY) || null;
+    state.filter = migrateFilter(loadPref(FILTER_KEY));
     state.gongfuOnly = loadPref(GONGFU_KEY) === '1';
     state.refillOnly = loadPref(REFILL_KEY) === '1';
     soundOn = loadPref(SOUND_KEY) !== '0';
@@ -279,6 +335,14 @@
     tea.prefill = false;
   }
 
+  /** Ett sparat sortfilter från en äldre version ("k:Grönt") blir den nya nyckeln ("k:green"). */
+  function migrateFilter(key) {
+    if (!key) return null;
+    if (key.indexOf('k:') !== 0) return key;
+    var known = knownSort(key.slice(2));
+    return known ? 'k:' + known.id : key;
+  }
+
   function knownSort(text) {
     var lower = oneLine(text).toLowerCase();
     if (!lower) return null;
@@ -291,21 +355,21 @@
   /** Gruppen för en sort: { key, label, color, rank, index }. */
   function groupFor(sortValue) {
     var text = oneLine(sortValue);
-    if (!text) return { key: NO_SORT, label: 'Utan sort', color: '', rank: 2, index: 0 };
+    if (!text) return { key: NO_SORT, label: 'No type', color: '', rank: 2, index: 0 };
     var known = knownSort(text);
-    if (known) return { key: 'k:' + known.label, label: known.label, color: known.color, rank: 0, index: SORTS.indexOf(known) };
+    if (known) return { key: 'k:' + known.id, label: known.label, color: known.color, rank: 0, index: SORTS.indexOf(known) };
     return { key: 'x:' + text.toLowerCase(), label: capitalize(text), color: '', rank: 1, index: 0 };
   }
 
   function compareGroups(a, b) {
-    return a.rank - b.rank || a.index - b.index || a.label.localeCompare(b.label, 'sv');
+    return a.rank - b.rank || a.index - b.index || a.label.localeCompare(b.label, 'en');
   }
 
   function compareNames(a, b) {
     if (!a && !b) return 0;
     if (!a) return 1;
     if (!b) return -1;
-    return a.localeCompare(b, 'sv', { sensitivity: 'base', numeric: true });
+    return a.localeCompare(b, 'en', { sensitivity: 'base', numeric: true });
   }
 
   /** Grupperna bland de ifyllda teerna, i visningsordning, med antal. */
@@ -343,7 +407,7 @@
   /** "2 – 3 min" → "2-3", så att förslagsknappen 2–3 visas som vald. */
   function normalizeNumber(value) {
     return oneLine(value).toLowerCase()
-      .replace(/\s*(°c|°|grader|minuter|minut|min)\.?$/, '')
+      .replace(/\s*(°c|°|degrees|grader|minutes|minute|minuter|minut|min)\.?$/, '')
       .replace(/\s*[-–—]\s*/, '-');
   }
 
@@ -353,7 +417,7 @@
    */
   function parseBrewTime(value) {
     var text = oneLine(value).toLowerCase().replace(/,/g, '.');
-    var m = /^(\d+(?:\.\d+)?)\s*(?:[-–—]\s*(\d+(?:\.\d+)?))?\s*(minuter|minut|min|m|sekunder|sekund|sek|sec|s)?\.?$/.exec(text);
+    var m = /^(\d+(?:\.\d+)?)\s*(?:[-–—]\s*(\d+(?:\.\d+)?))?\s*(minutes|minute|minuter|minut|mins|min|m|seconds|second|sekunder|sekund|secs|sec|sek|s)?\.?$/.exec(text);
     if (!m) return null;
     var factor = m[3] && m[3].charAt(0) === 's' ? 1 : 60;
     var lo = Math.round(parseFloat(m[1]) * factor);
@@ -362,10 +426,10 @@
     return { lo: lo, hi: hi };
   }
 
-  /** Ett intervall i sekunder som text: "10–15 s", "2–3 min", "1,5 min". */
+  /** Ett intervall i sekunder som text: "10–15 s", "2–3 min", "1.5 min". */
   function rangeText(lo, hi) {
     if (hi < 60) return (lo === hi ? lo : lo + '–' + hi) + ' s';
-    var min = function (sec) { return String(Math.round(sec / 6) / 10).replace('.', ','); };
+    var min = function (sec) { return String(Math.round(sec / 6) / 10); };
     return (lo === hi ? min(lo) : min(lo) + '–' + min(hi)) + ' min';
   }
 
@@ -401,6 +465,7 @@
   function parse(text) {
     var teas = [];
     var restBlocks = [];
+    var converted = false;
     var blocks = String(text || '').replace(/\r\n?/g, '\n').split(/\n[ \t]*\n/);
 
     blocks.forEach(function (block) {
@@ -426,12 +491,37 @@
         }
         seen[field.key] = true;
         current.values[field.key] = field.flag ? YES.test(value) : value;
+        // Svenskt fältnamn eller "ja": texten är i det äldre, svenska formatet.
+        if (SWEDISH_LABELS.indexOf(m[1].trim().toLowerCase()) !== -1 || (field.flag && /^\s*ja\b/i.test(value))) converted = true;
       });
 
       if (loose.length) restBlocks.push(loose.join('\n'));
     });
 
-    return { teas: teas, rest: restBlocks.join('\n\n') };
+    teas.forEach(function (tea) { if (toEnglish(tea)) converted = true; });
+    return { teas: teas, rest: restBlocks.join('\n\n'), converted: converted };
+  }
+
+  /**
+   * Svenska sortnamn, länder och smakord i ett te blir engelska ("Grönt" → "Green",
+   * "Kina" → "China", "honung, blommig" → "honey, floral"). Returnerar true om något ändrades.
+   */
+  function toEnglish(tea) {
+    var v = tea.values;
+    var before = v.sort + '|' + v.land + '|' + v.smak;
+    var sortText = oneLine(v.sort).toLowerCase();
+    SORTS.forEach(function (sort) {
+      if (sort.sv.indexOf(sortText) !== -1) v.sort = sort.label;
+    });
+    v.land = String(v.land || '').replace(COUNTRY_PATTERN, function (all, lead, word) {
+      return lead + COUNTRIES_SV[word.toLowerCase()];
+    });
+    if (v.smak) {
+      v.smak = tasteWords(v.smak).map(function (w) {
+        return TASTES_SV[w.toLowerCase()] || w;
+      }).join(', ');
+    }
+    return before !== v.sort + '|' + v.land + '|' + v.smak;
   }
 
   function serialize(teas, rest) {
@@ -440,7 +530,7 @@
     if (!filled.length) filled = [emptyTea()];
     var blocks = filled.map(function (tea) {
       var lines = FIELDS.map(function (f) {
-        var v = f.flag ? (tea.values[f.key] ? 'ja' : '') : oneLine(tea.values[f.key]);
+        var v = f.flag ? (tea.values[f.key] ? 'yes' : '') : oneLine(tea.values[f.key]);
         return f.label + ':' + (v ? ' ' + v : '');
       });
       return lines.concat(tea.extra).join('\n');
@@ -458,27 +548,27 @@
   }
 
   function teaCount(n) {
-    return n === 1 ? '1 te' : n + ' teer';
+    return n === 1 ? '1 tea' : n + ' teas';
   }
 
   /**
    * Förhandsvisningen i anteckningslistan.
    * Ett te: "Dong Ding · Oolong · 95 °C · Taiwan · gong fu".
-   * Flera: "12 teer, 7 för gong fu: 4 oolong, 3 grönt, 2 svart, 2 pu-erh, 1 utan sort".
+   * Flera: "12 teas, 7 for gong fu: 4 oolong, 3 green, 2 black, 2 pu-erh, 1 no type".
    */
   function preview(teas) {
     var filled = teas.filter(hasContent);
     if (!filled.length) return '';
     if (filled.length === 1) {
       var v = filled[0].values;
-      var parts = [oneLine(v.namn), oneLine(v.sort), formatTemp(v.temperatur), formatTime(v.bryggtid), oneLine(v.land), v.gongfu ? 'gong fu' : '', v.fyllpa ? 'fyll på' : ''];
+      var parts = [oneLine(v.namn), oneLine(v.sort), formatTemp(v.temperatur), formatTime(v.bryggtid), oneLine(v.land), v.gongfu ? 'gong fu' : '', v.fyllpa ? 'refill' : ''];
       return truncate(parts.filter(Boolean).join(' · '));
     }
     var gongfu = filled.filter(function (tea) { return tea.values.gongfu; }).length;
     var refill = filled.filter(function (tea) { return tea.values.fyllpa; }).length;
     var groups = groupsOf(filled).sort(function (a, b) { return b.count - a.count || compareGroups(a, b); });
-    return truncate(teaCount(filled.length) + (gongfu ? ', ' + gongfu + ' för gong fu' : '') +
-      (refill ? ', ' + refill + ' att fylla på' : '') + ': ' +
+    return truncate(teaCount(filled.length) + (gongfu ? ', ' + gongfu + ' for gong fu' : '') +
+      (refill ? ', ' + refill + ' to refill' : '') + ': ' +
       groups.map(function (g) { return g.count + ' ' + g.label.toLowerCase(); }).join(', '));
   }
 
@@ -498,21 +588,21 @@
   window.addEventListener('message', function (e) {
     diagInfo.messages++;
     var d = e.data, kind = typeof d;
-    if (kind === 'string') { try { d = JSON.parse(d); kind = 'json-sträng'; } catch (x) { /* ren sträng */ } }
-    diagInfo.lastMessage = 'origin=' + e.origin + ' typ=' + kind + (d && d.action ? ' action=' + d.action : '');
+    if (kind === 'string') { try { d = JSON.parse(d); kind = 'json-string'; } catch (x) { /* ren sträng */ } }
+    diagInfo.lastMessage = 'origin=' + e.origin + ' type=' + kind + (d && d.action ? ' action=' + d.action : '');
   }, true);
 
   function diagText() {
     var m = /Chrome\/([\d.]+)/.exec(navigator.userAgent);
     var ref = '';
-    try { ref = document.referrer ? new URL(document.referrer).origin : '(tom)'; } catch (e) { ref = '(ogiltig)'; }
+    try { ref = document.referrer ? new URL(document.referrer).origin : '(empty)'; } catch (e) { ref = '(invalid)'; }
     return [
       'Version: ' + VERSION,
       'WebView: ' + (m ? 'Chrome ' + m[1] : navigator.userAgent.slice(0, 80)),
-      'I iframe: ' + (window.parent !== window),
+      'In iframe: ' + (window.parent !== window),
       'Referrer: ' + ref,
-      'Meddelanden mottagna: ' + diagInfo.messages + (diagInfo.lastMessage ? ' (senast ' + diagInfo.lastMessage + ')' : ''),
-      'Fel: ' + (diagInfo.errors.length ? diagInfo.errors.join(' | ') : 'inga')
+      'Messages received: ' + diagInfo.messages + (diagInfo.lastMessage ? ' (last ' + diagInfo.lastMessage + ')' : ''),
+      'Errors: ' + (diagInfo.errors.length ? diagInfo.errors.join(' | ') : 'none')
     ].join('\n');
   }
 
@@ -564,7 +654,7 @@
     if (!state.connected && !STANDALONE) {
       el.notice.hidden = false;
       document.getElementById('diag').textContent = diagText();
-      setSaveState('Ej ansluten', 'error');
+      setSaveState('Not connected', 'error');
     }
   }, NOT_CONNECTED_HINT_MS);
 
@@ -587,6 +677,7 @@
     }
 
     var textChanged = false;
+    var converted = false;
     if (!note.isMetadataUpdate || isNewNote) {
       var incoming = (note.content && note.content.text) || '';
       // Vår egen sparning som kommer tillbaka ska inte skriva över det man håller på att skriva.
@@ -595,6 +686,7 @@
         var parsed = parse(incoming);
         state.teas = parsed.teas;
         state.rest = parsed.rest;
+        converted = parsed.converted;
         // Indexet hör till den gamla texten; släpp det utan att röra den nya listan.
         if (isNewNote || state.expanded >= state.teas.length) {
           state.expanded = -1;
@@ -614,6 +706,8 @@
       render();
       if (isNewNote) el.page.scrollTop = 0;
     }
+    // Äldre, svensk text skrivs om till engelska direkt, så att anteckningen också blir engelsk.
+    if (converted && state.teas.some(hasContent)) save();
   }
 
   function isLocked(note) {
@@ -636,11 +730,11 @@
     if (STANDALONE) {
       note.content.text = text;
       storeText(text);
-      setSaveState('Sparat', 'saved');
+      setSaveState('Saved', 'saved');
       return;
     }
     var previewText = preview(state.teas);
-    setSaveState('Sparar…', '');
+    setSaveState('Saving…', '');
     relay.saveItemWithPresave(note, function () {
       note.content.text = text;
       note.content.preview_plain = previewText;
@@ -650,7 +744,7 @@
       if (state.sentTexts.length > 20) state.sentTexts.shift();
     }, function () {
       if (state.note && state.note.uuid === note.uuid) {
-        setSaveState('Sparat', 'saved');
+        setSaveState('Saved', 'saved');
       }
     });
   }
@@ -1096,15 +1190,15 @@
     var text = '';
     if (!groups.length && state.note) {
       if (!filled.length) {
-        text = 'Inga teer ännu.';
+        text = 'No teas yet.';
       } else if (state.search.trim()) {
-        text = 'Inga teer matchar ”' + state.search.trim() + '”' + (anyFilter() ? ' med filtret som är valt.' : '.');
+        text = 'No teas match “' + state.search.trim() + '”' + (anyFilter() ? ' with the selected filter.' : '.');
       } else {
         var label = state.filter ? groupsOf(filled).filter(function (g) { return g.key === state.filter; })[0] : null;
-        var among = label ? ' bland ' + label.label.toLowerCase() : '';
-        if (state.refillOnly) text = 'Inget behöver fyllas på' + (state.gongfuOnly ? ' bland gong fu-teerna' : among) + '.';
-        else if (state.gongfuOnly) text = 'Inga teer för gong fu' + among + '.';
-        else text = 'Inga teer här.';
+        var among = label ? ' among the ' + label.label.toLowerCase() + ' teas' : '';
+        if (state.refillOnly) text = 'Nothing needs a refill' + (state.gongfuOnly ? ' among the gong fu teas' : among) + '.';
+        else if (state.gongfuOnly) text = 'No gong fu teas' + among + '.';
+        else text = 'No teas here.';
       }
     }
     el.empty.textContent = text;
@@ -1125,7 +1219,7 @@
     if (el.filters.getAttribute('data-shown') !== key) {
       el.filters.setAttribute('data-shown', key);
       var frag = document.createDocumentFragment();
-      frag.appendChild(chip('', 'Alla', '', !state.filter));
+      frag.appendChild(chip('', 'All', '', !state.filter));
       groups.forEach(function (g) { frag.appendChild(chip(g.key, g.label, g.color, state.filter === g.key)); });
       el.filters.textContent = '';
       el.filters.appendChild(frag);
@@ -1164,12 +1258,12 @@
     var filled = state.teas.filter(hasContent);
     var text = teaCount(filled.length);
     if (anyFilter() || searchTerms().length) {
-      text = filled.filter(passesFilters).length + ' av ' + text;
+      text = filled.filter(passesFilters).length + ' of ' + text;
     } else {
       var gongfu = filled.filter(function (tea) { return tea.values.gongfu; }).length;
-      if (gongfu) text += ' · ' + gongfu + ' för gong fu';
+      if (gongfu) text += ' · ' + gongfu + ' for gong fu';
       var refill = filled.filter(function (tea) { return tea.values.fyllpa; }).length;
-      if (refill) text += ' · ' + refill + ' att fylla på';
+      if (refill) text += ' · ' + refill + ' to refill';
     }
     el.count.textContent = text;
   }
@@ -1206,7 +1300,7 @@
     var remove = card.querySelector('[data-action="remove"]');
     var confirming = state.confirmIndex === index;
     remove.hidden = !editing;
-    remove.textContent = confirming ? 'Tryck igen för att ta bort' : 'Ta bort te';
+    remove.textContent = confirming ? 'Tap again to remove' : 'Remove tea';
     remove.classList.toggle('confirm', confirming);
   }
 
@@ -1225,7 +1319,7 @@
 
     var title = card.querySelector('.s-title');
     var name = oneLine(tea.values.namn);
-    title.textContent = name || (hasContent(tea) ? 'Namnlöst te' : 'Nytt te');
+    title.textContent = name || (hasContent(tea) ? 'Unnamed tea' : 'New tea');
     title.classList.toggle('placeholder', !name);
 
     // Sorten står i gruppens rubrik; den syns i raden bara om den har ändrats sedan dess.
@@ -1260,7 +1354,7 @@
 
   /** Vitt te har ett eget gong fu-schema. */
   function scheduleName(tea) {
-    return groupFor(tea.values.sort).key === 'k:Vitt' ? 'white' : 'standard';
+    return groupFor(tea.values.sort).key === 'k:white' ? 'white' : 'standard';
   }
 
   /**
@@ -1280,7 +1374,7 @@
     rows.forEach(function (row, step) {
       var tr = document.createElement('tr');
       tr.setAttribute('data-step', String(step));
-      tr.title = 'Starta timern här';
+      tr.title = 'Start the timer here';
       var th = document.createElement('th');
       th.scope = 'row';
       th.textContent = row[0];
@@ -1345,7 +1439,7 @@
       extra.push(name);
     });
     extra.sort(function (a, b) {
-      return counts[b.toLowerCase()] - counts[a.toLowerCase()] || a.localeCompare(b, 'sv');
+      return counts[b.toLowerCase()] - counts[a.toLowerCase()] || a.localeCompare(b, 'en');
     });
     return SHOPS.concat(extra);
   }
@@ -1405,7 +1499,7 @@
       nativeSet(TEXT_KEY, text);
       return;
     }
-    try { window.localStorage.setItem(TEXT_KEY, text); } catch (e) { setSaveState('Kan inte spara', 'error'); }
+    try { window.localStorage.setItem(TEXT_KEY, text); } catch (e) { setSaveState('Can’t save', 'error'); }
   }
 
   /** Appen håller skärmen tänd medan timern är öppen (finns bara i Te-appen). */
@@ -1426,7 +1520,7 @@
   function openTextPanel() {
     var any = state.teas.some(hasContent) || state.rest;
     el.textArea.value = any ? serialize(state.teas, state.rest) : '';
-    el.textCopy.textContent = 'Kopiera allt';
+    el.textCopy.textContent = 'Copy all';
     el.textPanel.hidden = false;
     document.body.classList.add('timer-open');
   }
@@ -1484,7 +1578,7 @@
     closeTextPanel();
   });
   el.textCopy.addEventListener('click', function () {
-    el.textCopy.textContent = copyText(el.textArea.value) ? 'Kopierat' : 'Markera och kopiera själv';
+    el.textCopy.textContent = copyText(el.textArea.value) ? 'Copied' : 'Select and copy it yourself';
   });
   el.textPanel.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
@@ -1571,7 +1665,7 @@
     var western = parseBrewTime(tea.values.bryggtid);
     if (kind === 'western' && !western) return;
     timer = {
-      name: oneLine(tea.values.namn) || 'Te',
+      name: oneLine(tea.values.namn) || 'Tea',
       // Vattentemperaturen, som "90–95 °C"; visas ovanför ringen.
       temp: formatTemp(tea.values.temperatur),
       kind: kind,
@@ -1627,7 +1721,7 @@
 
   /** Steg `index` i timern: { label, note, lo, hi } i sekunder. */
   function timerStep(index) {
-    if (timer.kind === 'western') return { label: 'Vanlig bryggning', note: '', lo: timer.western.lo, hi: timer.western.hi };
+    if (timer.kind === 'western') return { label: 'Western brewing', note: '', lo: timer.western.lo, hi: timer.western.hi };
     var s = timer.schedule;
     if (index === 0) return { label: 'First rinse', note: s.rinse.note, lo: s.rinse.lo, hi: s.rinse.hi };
     if (index <= s.infusions.length) {
@@ -1739,9 +1833,9 @@
   }
 
   function mainLabel(step, phase, elapsed) {
-    if (phase !== 'brew') return timer.kind === 'western' ? 'Klar' : 'Starta ' + timerStep(timer.index + 1).label.toLowerCase();
-    if (timer.running) return 'Paus';
-    return elapsed > 0 ? 'Fortsätt' : 'Starta';
+    if (phase !== 'brew') return timer.kind === 'western' ? 'Done' : 'Start ' + timerStep(timer.index + 1).label.toLowerCase();
+    if (timer.running) return 'Pause';
+    return elapsed > 0 ? 'Resume' : 'Start';
   }
 
   /** Sekunder som "12" eller, när steget är minst en minut, "1:05". */
@@ -1776,11 +1870,11 @@
     var status;
     // Hårt mellanslag före enheten, så att "s" eller "min" inte hamnar ensamt på en rad.
     var range = rangeText(step.lo, step.hi).replace(/ (s|min)$/, '\u00a0$1');
-    if (phase === 'window') status = 'Häll nu';
-    else if (phase === 'over') status = 'Över tiden (' + range + ')';
-    else if (timer.running) status = 'Brygger · häll efter ' + range;
-    else if (e > 0) status = 'Pausad';
-    else status = 'Häll efter ' + range + '. Tryck Starta när vattnet är i.';
+    if (phase === 'window') status = 'Pour now';
+    else if (phase === 'over') status = 'Over time (' + range + ')';
+    else if (timer.running) status = 'Brewing · pour after ' + range;
+    else if (e > 0) status = 'Paused';
+    else status = 'Pour after ' + range + '. Tap Start when the water is in.';
     if (tm.status.textContent !== status) tm.status.textContent = status;
 
     ['brew', 'window', 'over'].forEach(function (p) { tm.root.classList.toggle('phase-' + p, p === phase); });
@@ -1814,7 +1908,7 @@
         b.type = 'button';
         b.className = 'timer-chip';
         b.setAttribute('data-step', String(i));
-        b.textContent = i === 0 ? 'Skölj' : i > count ? count + 1 + '+' : String(i);
+        b.textContent = i === 0 ? 'Rinse' : i > count ? count + 1 + '+' : String(i);
         tm.steps.appendChild(b);
       }
     }

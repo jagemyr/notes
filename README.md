@@ -139,134 +139,149 @@ visas under datumfältet tills ett nytt datum väljs.
 
 ## Te
 
-En lista med teer. Varje te har **Sort**, **Namn**, **Temperatur**, **Bryggtid** (vanlig bryggning), **Land**, **Butik**, **Smak** och bockar
-för om det **behöver fyllas på** och om det **passar för gong fu**.
+*(The Tea plugin and app are in English from version 2.0.0, so this section is too.)*
 
-- Teerna grupperas per sort (grönt, vitt, gult, oolong, svart, pu-erh, mörkt, matcha, örtte, rooibos,
-  sedan egna sorter och sist *Utan sort*) och sorteras på namn inom gruppen. Varje sort har en egen färg
-  som kant till vänster på raden.
-- Raden visar namn, land och butik, ett grönt märke **Gong fu** och ett orange märke **Fyll på** när de är ibockade,
-  smaken på en egen rad under, och till höger temperatur och bryggtid.
-  I listan kortas långa rader av med *…*; när teet är utfällt radbryts namn, land, butik och smak, så att hela
-  smakprofilen syns utan *Ändra* även på en smal skärm.
-- Tryck på ett te för att fälla ut det. Det visas först utan fält: timerknapparna, bocken *Behöver fyllas på* och
-  gong fu-schemat. **Ändra** tar fram fälten, valknapparna, bocken *Passar för gong fu* och *Ta bort te*, så att ett
-  tryck när man scrollar inte byter sort av misstag. Ett nytt te öppnas direkt för ändring. **Klar** fäller ihop det. Medan teet är utfällt står det kvar
-  på sin plats även om man byter sort eller namn; det flyttas till rätt grupp när det fälls ihop.
-- **Spärr vid scroll:** ett tryck på en valknapp, en bock, *Ändra* eller *Ta bort te* inom 0,4 sekunder efter att
-  man har scrollat med fingret (även medan sidan glider vidare) räknas inte. Det är ofta ett tryck för att stoppa
-  scrollen. Appens egen scroll och vanliga tryck spärrar inte.
-- **Nytt te** lägger till ett te. Ett nytt te som fälls ihop utan att något fyllts i försvinner.
-- **Ta bort te** frågar en gång till (*Tryck igen för att ta bort*).
-- Sort, temperatur, bryggtid och land fylls i fritt. Under fälten finns knappar med vanliga sorter, temperaturer
-  (70–100 grader), bryggtider (1–5 minuter) och länder; sort, temperatur och bryggtid visar den valda knappen
-  markerad, länderna filtreras efter det man skriver. Andra stavningar av sorterna (t.ex. *grön*, *green*, *puerh*, *shou*) hamnar i rätt grupp.
-- Temperaturen skrivs som en siffra (`95`) eller ett spann (`80-85`) och visas som *95 °C* eller *80–85 °C*.
-  Bryggtiden skrivs på samma sätt i minuter (`3`, `2-3`) och visas som *3 min* eller *2–3 min*; annan text
-  (t.ex. `30 sek`) visas som den står. Bryggtiden gäller vanlig bryggning, gong fu har sitt eget schema.
-- **Butik:** var teet köptes. Under fältet finns knappar med *In the Mood for Tea*, *The Tea Centre* och de butiker
-  som har skrivits in på andra teer i anteckningen (flest teer först). Skriver man in en ny butik blir den alltså en
-  knapp på alla andra teer. Med sökningen och **Fyll på** får man inköpslistan för en butik, t.ex. *tea centre*.
-- **Smak:** smakord åtskilda med kommatecken, t.ex. *honung, persika, blommig*. Under fältet finns knappar med
-  vanliga smakord (blommig, fruktig, citrus, honung, söt, nötig, rostad, rökig, maltig, jordig, träig, gräsig,
-  mineralisk, kryddig). Ett tryck lägger till ordet sist, ett till tar bort det; ord som finns i fältet är
-  markerade. Egna ord skrivs direkt i fältet och ligger kvar.
-- **Gong fu:** när bocken är ibockad visas ett bryggschema under den: first rinse (som hälls bort),
-  infusion 1–5 och +10 sekunder för varje infusion efter den femte. **Vitt te** (sorten Vitt) får ett eget
-  schema med längre dragningar (infusion 1 är 20–30 sekunder och tiden ökar till 40–50 sekunder vid den femte),
-  och sköljningen kan hoppas över. Schemat byter direkt när man ändrar sort. Schemana finns i koden
-  (`BREW_SCHEDULES` i `te.js`) och sparas inte i anteckningen.
-- **Sök:** fältet överst söker i namn, sort, land, butik och smak. Alla ord man skriver måste finnas i teet, så
-  *honung taiwan* hittar taiwanesiska teer som smakar honung. Stora och små bokstäver, accenter och
-  bindestreck spelar ingen roll (*rokig* hittar *rökig*, *puerh* hittar *Pu-erh*). Sökningen går att
-  kombinera med filtren, rensas med krysset eller Escape och sparas inte.
-- **Timer:** överst i ett utfällt te finns **Gong fu-timer** (när gong fu är ibockat) och en knapp med teets bryggtid
-  för vanlig bryggning (t.ex. *2–3 min*). Man kan också trycka på ett steg i gong fu-schemat för att börja där.
-  Teets vattentemperatur står ovanför ringen (t.ex. *90–95 °C*). Timern räknar ner till den kortaste tiden i intervallet. Vid noll är det dags att hälla: ljud, vibration (där
-  telefonen kan) och *Häll nu*. Sedan räknas sekunderna uppåt, grönt så länge man är inom intervallet och orange
-  efter det. I gong fu startar den stora knappen nästa infusion direkt (*Starta infusion 2*), och efter infusion 5
-  läggs 10 sekunder till per infusion. Vitt te följer sitt eget schema. Stegknapparna (Skölj, 1–5, 6+) och pilarna
-  hoppar mellan steg, klockan stänger av ljudet och Escape stänger timern. Bryggtiden kan skrivas som `3`, `2-3`,
-  `1,5` (minuter) eller `30 sek`. Timern sparar inget, fungerar även i en låst anteckning och går bara så länge
-  editorn är öppen; skärmen hålls tänd där webbläsaren tillåter det.
-  Pipen bokas in i ljudsystemet redan när timern startar, och en ohörbar ton (40 Hz, −60 dB) håller ljudsystemet
-  igång medan timern går. Med låst skärm saktar telefonen ner JavaScript och kan frysa ljudsystemets klocka när inget
-  spelas; tonen förhindrar det, så pipen kommer i tid. Har ljudklockan ändå stått still piper timern som reserv så
-  fort JavaScript hinner fram. Siffrorna och vibrationen kommer ikapp när skärmen tänds.
-  **iPhone:** iOS tystar Web Audio helt när telefonen står på ljudlöst. Timern begär därför uppspelningsläge
-  (`navigator.audioSession`) och spelar en tyst, inbyggd WAV-fil i ett `<audio>`-element medan den är öppen, så
-  att pipen hörs även på ljudlöst. Ljudfilen håller också ljudet igång med låst skärm, så pipen kommer i tid
-  även då (provat med 1.7.4 på iPhone och Android 16).
-- **Fyll på:** bocka i *Behöver fyllas på* när ett te håller på att ta slut. Filterknappen **Fyll på** visar bara
-  de teerna, som en inköpslista, och anteckningslistan i Standard Notes visar hur många som ska fyllas på.
-- **Filter:** knapparna under sökfältet (en rad som scrollar i sidled) visar alla teer eller en sort i taget. **Gong fu** visar bara teer som passar
-  för gong fu och **Fyll på** bara teer som behöver köpas; de går att kombinera med varandra, med en sort och med
-  sökningen. Filtren sparas per enhet. Med ett filter valt får ett nytt te den sorten (och gong fu eller fyll på).
-- Enter hoppar till nästa fält i samma te.
-- Anteckningslistan i Standard Notes visar till exempel *9 teer, 6 för gong fu, 2 att fylla på: 3 oolong, 2 grönt, …*.
-- Längst ner till höger står vilken version av pluginet som körs på enheten, t.ex. *v1.7.2*.
-- **E-ink-läge:** knappen **E-ink** bredvid versionen gör appen svartvit för e-ink-skärmar (t.ex.
-  Mudita Kompakt): svarta kanter i stället för ljusgrå, valda knappar i svart med vit text, *Gong fu* med ram och
-  *Fyll på* inverterat, inga sortfärger, svart sigill och inga animationer (de ger spökbilder). Valet sparas per
-  enhet. Utan val slås det på av sig självt på Mudita-telefoner och om skärmen säger att den är svartvit.
-- **Inställningar per enhet** (filter, Gong fu, Fyll på, ljud och e-ink) sparas i localStorage och dessutom i
-  pluginets data i Standard Notes, under en nyckel för enheten (modell och skärmstorlek). I Standard Notes på
-  telefonen töms pluginets localStorage varje gång anteckningen öppnas; då läses valen därifrån i stället.
-- **Smal skärm** (under 400 px): mindre marginaler och ingen pil till höger på raderna, så att texten får plats.
-- **茶** (*chá*, te) står som ett rött sigill högst upp till vänster om sökfältet (som syns när listan har minst
-  två teer) och i timern, penselskrivet i typsnittet Ma Shan Zheng. Pluginet har med sig bara det tecknet ur typsnittet, så det ser likadant ut på alla enheter.
+A list of teas. Each tea has a **Type**, **Name**, **Temperature**, **Brew time** (western brewing), **Country**,
+**Shop**, **Taste** and checkboxes for **Needs refill** and **Good for gong fu**.
 
-Allt sparas som vanlig text i anteckningen, ett block per te med en tom rad emellan, så det går att läsa även i
-andra editorer:
+- Teas are grouped by type (green, white, yellow, oolong, black, pu-erh, dark, matcha, herbal, rooibos, then
+  your own types and finally *No type*) and sorted by name within the group. Each type has its own colour as a
+  stripe on the left of the row.
+- A row shows name, country and shop, a green **Gong fu** badge and an orange **Refill** badge when ticked, the
+  taste on its own line below, and temperature and brew time on the right. Long rows are cut short with *…*;
+  when a tea is expanded, name, country, shop and taste wrap, so the whole taste profile is visible without
+  *Edit* even on a narrow screen.
+- Tap a tea to expand it. It first opens without fields: the timer buttons, the *Needs refill* checkbox and the
+  gong fu schedule. **Edit** shows the fields, the choice buttons, *Good for gong fu* and *Remove tea*, so a tap
+  while scrolling can't change the type by mistake. A new tea opens straight in edit mode. **Done** collapses it.
+  While a tea is expanded it stays in place even if you change its type or name; it moves to the right group
+  when it is collapsed.
+- **Scroll guard:** a tap on a choice button, a checkbox, *Edit* or *Remove tea* within 0.4 seconds after
+  scrolling with a finger (also while the page is still gliding) is ignored. It is usually a tap to stop the
+  scroll. The app's own scrolling and ordinary taps are not blocked.
+- **New tea** adds a tea. A new tea that is collapsed without anything filled in disappears.
+- **Remove tea** asks once more (*Tap again to remove*).
+- Type, temperature, brew time and country are free text. Under the fields are buttons with common types,
+  temperatures (70–100 degrees), brew times (1–5 minutes) and countries; type, temperature and brew time show the
+  chosen button as selected, countries are filtered by what you type. Other spellings of the types (e.g. *green
+  tea*, *puerh*, *shou*, or Swedish *grönt*) end up in the right group.
+- Temperature is written as a number (`95`) or a range (`80-85`) and shown as *95 °C* or *80–85 °C*. Brew time is
+  written the same way in minutes (`3`, `2-3`) and shown as *3 min* or *2–3 min*; other text (e.g. `30 sec`) is
+  shown as written. Brew time is for western brewing; gong fu has its own schedule.
+- **Shop:** where the tea was bought. Under the field are buttons with *In the Mood for Tea*, *The Tea Centre* and
+  the shops written on other teas in the note (most teas first), so a new shop becomes a button on all other teas.
+  Search plus **Refill** gives the shopping list for one shop, e.g. *tea centre*.
+- **Taste:** taste words separated by commas, e.g. *honey, peach, floral*. Under the field are buttons with
+  common words (floral, fruity, citrus, honey, sweet, nutty, roasted, smoky, malty, earthy, woody, grassy,
+  mineral, spicy). A tap adds the word at the end, another tap removes it; words in the field are shown as
+  selected. Your own words are typed straight into the field and stay.
+- **Gong fu:** when ticked, a brew schedule is shown: first rinse (poured away), infusion 1–5 and +10 seconds for
+  each infusion after the fifth. **White tea** (type White) has its own schedule with longer steeps (infusion 1 is
+  20–30 seconds, rising to 40–50 seconds at the fifth), and the rinse can be skipped. The schedule switches as soon
+  as the type changes. The schedules live in the code (`BREW_SCHEDULES` in `te.js`) and are not saved in the note.
+- **Search:** the field at the top searches name, type, country, shop and taste. Every word must be found in the
+  tea, so *honey taiwan* finds Taiwanese teas that taste of honey. Case, accents and hyphens don't matter
+  (*puerh* finds *Pu-erh*). Search combines with the filters, is cleared with the cross or Escape, and is not saved.
+- **Timer:** at the top of an expanded tea are **Gong fu timer** (when gong fu is ticked) and a button with the
+  tea's brew time for western brewing (e.g. *2–3 min*). You can also tap a step in the gong fu schedule to start
+  there. The water temperature is shown above the ring (e.g. *90–95 °C*). The timer counts down to the shortest
+  time in the range. At zero it is time to pour: sound, vibration (where the phone can) and *Pour now*. Then the
+  seconds count up, green while inside the range and orange after it. In gong fu the big button starts the next
+  infusion straight away (*Start infusion 2*), and after infusion 5 ten seconds are added per infusion. White tea
+  follows its own schedule. The step buttons (Rinse, 1–5, 6+) and the arrows jump between steps, the bell turns the
+  sound off and Escape closes the timer. Brew time can be written as `3`, `2-3`, `1.5` (minutes) or `30 sec`. The
+  timer saves nothing, works in a locked note too, and only runs while the editor is open; the screen is kept on
+  where the browser allows it.
+  The beeps are booked in the audio system as soon as the timer starts, and an inaudible tone (40 Hz, −60 dB) keeps
+  the audio system running while the timer runs. With a locked screen the phone slows JavaScript down and can
+  freeze the audio clock when nothing plays; the tone prevents that, so the beeps come on time. If the audio clock
+  has stood still anyway, the timer beeps as a fallback as soon as JavaScript gets there. The numbers and the
+  vibration catch up when the screen turns on.
+  **iPhone:** iOS silences Web Audio completely when the phone is on silent. The timer therefore asks for playback
+  mode (`navigator.audioSession`) and plays a silent, built-in WAV file in an `<audio>` element while it is open, so
+  the beeps are heard on silent too. The audio file also keeps sound running with a locked screen, so the beeps
+  come on time then as well (tested with 1.7.4 on iPhone and Android 16).
+- **Refill:** tick *Needs refill* when a tea is running low. The **Refill** filter button shows only those teas,
+  like a shopping list, and the note list in Standard Notes shows how many need a refill.
+- **Filters:** the buttons under the search field (a row that scrolls sideways) show all teas or one type at a
+  time. **Gong fu** shows only teas good for gong fu and **Refill** only teas that need buying; they combine with
+  each other, with a type and with search. Filters are saved per device. With a filter chosen, a new tea gets that
+  type (and gong fu or refill).
+- Enter jumps to the next field in the same tea.
+- The note list in Standard Notes shows, for example, *9 teas, 6 for gong fu, 2 to refill: 3 oolong, 2 green, …*.
+- The version running on the device is shown at the bottom right, e.g. *v2.0.0*.
+- **E-ink mode:** the **E-ink** button next to the version makes the app black and white for e-ink screens (e.g.
+  Mudita Kompakt): black borders instead of light grey, selected buttons in black with white text, *Gong fu*
+  outlined and *Refill* inverted, no type colours, a black seal and no animations (they cause ghosting). The choice
+  is saved per device. Without a choice it turns on by itself on Mudita phones and if the screen reports that it
+  is monochrome.
+- **Settings per device** (filters, Gong fu, Refill, sound and e-ink) are saved in localStorage and also in the
+  plugin's data in Standard Notes, under a key for the device (model and screen size). Standard Notes on the phone
+  clears the plugin's localStorage each time the note is opened; the choices are then read from there instead.
+- **Narrow screen** (under 400 px): smaller margins and no arrow on the right of the rows, so the text fits.
+- **茶** (*chá*, tea) is a red seal at the top left of the search field (shown when the list has at least two teas)
+  and in the timer, brush-written in the Ma Shan Zheng typeface. The plugin carries only that character from the
+  typeface, so it looks the same on every device.
+
+Everything is saved as plain text in the note, one block per tea with a blank line between, so it can be read in
+other editors too:
 
 ```
-Sort: Oolong
-Namn: Dong Ding
-Temperatur: 95
-Bryggtid: 2-3
-Land: Taiwan
-Butik: In the Mood for Tea
-Smak: honung, persika, blommig
-Gong fu: ja
-Fyll på:
+Type: Oolong
+Name: Dong Ding
+Temperature: 95
+Brew time: 2-3
+Country: Taiwan
+Shop: In the Mood for Tea
+Taste: honey, peach, floral
+Gong fu: yes
+Refill:
 
-Sort: Grönt
-Namn: Sencha
-Temperatur: 70-80
-Bryggtid: 1-2
-Land: Japan
-Butik: The Tea Centre
-Smak:
+Type: Green
+Name: Sencha
+Temperature: 70-80
+Brew time: 1-2
+Country: Japan
+Shop: The Tea Centre
+Taste:
 Gong fu:
-Fyll på: ja
+Refill: yes
 ```
 
-`Gong fu` och `Fyll på` är `ja` eller tomt; skrivet för hand räknas även `x` och `✅` som ja, och `Slut: ja` eller
-`Köp: ja` som Fyll på. Fält skrivna för hand med andra
-namn känns igen (t.ex. `Typ`, `Te`, `Temp`, `Dragtid`, `Ursprung`, `Köpt i`, `Smaknoter`) och skrivs om till fältnamnen när listan sparas.
-Teer utan något ifyllt sparas inte. Rader som inte är fält ligger kvar oförändrade, i sitt te om de står i ett
-block med fält, annars sist.
+`Gong fu` and `Refill` are `yes` or empty; written by hand, `x`, `✅` and `ja` also count as yes, and
+`Running low: yes` or `Buy again: yes` as Refill. Fields written by hand with other names are recognised (e.g.
+`Tea`, `Temp`, `Steep time`, `Origin`, `Bought at`, `Tasting notes`) and rewritten to the field names when the list
+is saved. Teas with nothing filled in are not saved. Lines that are not fields stay unchanged, in their tea if they
+are in a block with fields, otherwise at the end.
 
-### Te som Android-app
+**From the Swedish version (before 2.0.0):** text with the old Swedish field names (`Sort`, `Namn`, `Temperatur`,
+`Bryggtid`, `Land`, `Butik`, `Smak`, `Fyll på`) is still read. Swedish type names (*Grönt* → *Green*), countries
+(*Kina* → *China*) and common taste words (*honung, blommig* → *honey, floral*) are translated, `ja` becomes `yes`,
+and the note is rewritten in English as soon as it is opened. Words that aren't in the list stay as they are, and
+tea names are never changed. A saved type filter carries over.
 
-Te finns också som en fristående Android-app (mappen `apk/`), för telefoner utan Standard Notes eller när man
-vill ha teerna ett tryck bort. Appen är samma Te som pluginet, inbyggd i en WebView, men listan sparas i
-telefonen i stället för i en anteckning. Den behöver ingen internetbehörighet.
+### Tea as an Android app
 
-- **Text** i statusraden visar hela listan som text. Klistra in texten från teanteckningen i Standard Notes och
-  tryck **Spara** (det ersätter hela listan i appen), eller tryck **Kopiera allt** och klistra in i anteckningen.
-  Texten från en Te-anteckning hämtas enklast genom att byta editor till Plain Text en stund och kopiera allt.
-- Listan och inställningarna sparas direkt i appen och finns kvar efter omstart.
-- Medan timern är öppen hålls skärmen tänd.
-- **Tillbaka** stänger timern eller Text-panelen, fäller ihop teet eller tömmer sökningen, och stänger annars appen.
-- Versionen är densamma som pluginets (t.ex. *v1.11.0*), eftersom appen byggs från `te/`.
+Tea is also a standalone Android app (the `apk/` folder), for phones without Standard Notes or to have the teas
+one tap away. The app is the same Tea as the plugin, in a WebView, but the list is stored on the phone instead of
+in a note. It needs no internet permission.
 
-Samma sidor går att prova i en webbläsare med `te/index.html?standalone=1` (då sparas listan i localStorage).
+- **Text** in the status bar shows the whole list as text. Paste the text from the tea note in Standard Notes and
+  tap **Save** (it replaces the whole list in the app), or tap **Copy all** and paste it into the note. The text of a
+  Tea note is easiest to get by switching the editor to Plain Text for a moment and copying everything. Swedish
+  text from before 2.0.0 is translated as described above.
+- The list and settings are saved in the app straight away and survive a restart.
+- The screen is kept on while the timer is open.
+- **Back** closes the timer or the Text panel, collapses the tea or clears the search, and otherwise closes the app.
+- The version is the same as the plugin's (e.g. *v2.0.0*), because the app is built from `te/`.
 
-**Bygga:** `apk/build.sh` bygger och signerar APK:n med Ubuntus paket (`android-sdk-platform-23`, `aapt`,
-`dalvik-exchange`, `zipalign`, `apksigner` och en JDK), utan Gradle. Hur nyckeln skapas och anges står överst i
-skriptet. Varje uppdatering måste signeras med samma nyckel, annars går den inte att installera över den gamla
-appen (och listan i appen följer inte med). Nyckeln läggs aldrig i repot.
+The same pages can be tried in a browser with `te/index.html?standalone=1` (the list is then stored in
+localStorage).
+
+**Building:** `apk/build.sh` builds and signs the APK with Ubuntu packages (`android-sdk-platform-23`, `aapt`,
+`dalvik-exchange`, `zipalign`, `apksigner` and a JDK), without Gradle. How to create and pass the key is described at
+the top of the script. Every update must be signed with the same key, otherwise it can't be installed over the old
+app (and the list in the app won't carry over). The key is never put in the repo.
 
 ## Installera
 
@@ -302,7 +317,7 @@ notes/
 │   │   ├── cha.woff2      Tecknet 茶 ur Ma Shan Zheng (bara det tecknet, 1,2 kB)
 │   │   └── OFL.txt        Typsnittets licens
 │   └── vendor/
-├── apk/                   Te som Android-app (se Te som Android-app)
+├── apk/                   Tea som Android-app (se Tea as an Android app)
 │   ├── AndroidManifest.xml
 │   ├── src/…/MainActivity.java   WebView med bryggan TeNative (sparar i telefonen)
 │   ├── res/               Ikonen (sigillet) och temat

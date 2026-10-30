@@ -6,7 +6,7 @@
 #   sudo apt-get install android-sdk-platform-23 aapt dalvik-exchange zipalign apksigner default-jdk-headless
 #
 # Webbappen i te/ kopieras in som den är, så appen har alltid samma version som pluginet.
-# versionName tas från VERSION i te/te.js och versionCode räknas fram ur den (1.11.0 → 11100).
+# versionName tas från VERSION i te/te.js och versionCode räknas fram ur den (2.0.0 → 20000).
 #
 # Appen signeras med din egen nyckel. Samma nyckel måste användas vid varje uppdatering,
 # annars vägrar telefonen installera över den gamla appen. Skapa nyckeln en gång:
