@@ -173,6 +173,15 @@ för om det **behöver fyllas på** och om det **passar för gong fu**.
   *honung taiwan* hittar taiwanesiska teer som smakar honung. Stora och små bokstäver, accenter och
   bindestreck spelar ingen roll (*rokig* hittar *rökig*, *puerh* hittar *Pu-erh*). Sökningen går att
   kombinera med filtren, rensas med krysset eller Escape och sparas inte.
+- **Timer:** överst i ett utfällt te finns **Gong fu-timer** (när gong fu är ibockat) och en knapp med teets bryggtid
+  för vanlig bryggning (t.ex. *2–3 min*). Man kan också trycka på ett steg i gong fu-schemat för att börja där.
+  Timern räknar ner till den kortaste tiden i intervallet. Vid noll är det dags att hälla: ljud, vibration (där
+  telefonen kan) och *Häll nu*. Sedan räknas sekunderna uppåt, grönt så länge man är inom intervallet och orange
+  efter det. I gong fu startar den stora knappen nästa infusion direkt (*Starta infusion 2*), och efter infusion 5
+  läggs 10 sekunder till per infusion. Vitt te följer sitt eget schema. Stegknapparna (Skölj, 1–5, 6+) och pilarna
+  hoppar mellan steg, klockan stänger av ljudet och Escape stänger timern. Bryggtiden kan skrivas som `3`, `2-3`,
+  `1,5` (minuter) eller `30 sek`. Timern sparar inget, fungerar även i en låst anteckning och går bara så länge
+  editorn är öppen; skärmen hålls tänd där webbläsaren tillåter det.
 - **Fyll på:** bocka i *Behöver fyllas på* när ett te håller på att ta slut. Filterknappen **Fyll på** visar bara
   de teerna, som en inköpslista, och anteckningslistan i Standard Notes visar hur många som ska fyllas på.
 - **Filter:** knapparna under sökfältet visar alla teer eller en sort i taget. **Gong fu** visar bara teer som passar

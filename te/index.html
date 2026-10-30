@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Te (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=1.6.0">
+  <link rel="stylesheet" href="te.css?v=1.7.0">
 </head>
 <body>
   <nav class="filters" id="filters-bar" aria-label="Sök och filtrera teer" hidden>
@@ -75,6 +75,11 @@
       </button>
 
       <div class="details" hidden>
+        <div class="brew-bar" hidden>
+          <button type="button" class="timer-btn" data-action="timer-gongfu" hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>Gong fu-timer</button>
+          <button type="button" class="timer-btn" data-action="timer-western" hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg><span class="timer-btn-label"></span></button>
+        </div>
+
         <div class="field">
           <span>Sort</span>
           <input type="text" data-key="sort" aria-label="Sort" autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
@@ -138,6 +143,7 @@
           <caption></caption>
           <tbody></tbody>
         </table>
+        <p class="brew-hint" hidden>Tryck på ett steg för att starta timern där.</p>
 
         <div class="d-actions">
           <button type="button" class="link-btn" data-action="collapse">Klar</button>
@@ -147,7 +153,49 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=1.6.0"></script>
-  <script src="te.js?v=1.6.0"></script>
+  <!-- Bryggtimern. Fylls i och styrs av te.js; sparar inget i anteckningen. -->
+  <div class="timer" id="timer" role="dialog" aria-modal="true" aria-labelledby="timer-tea" tabindex="-1" hidden>
+    <div class="timer-head">
+      <div class="timer-titles">
+        <p class="timer-tea" id="timer-tea"></p>
+        <p class="timer-step"><span id="timer-step"></span> <span class="timer-note" id="timer-note"></span></p>
+      </div>
+      <button type="button" class="timer-icon" id="timer-sound" aria-label="Ljud" aria-pressed="true" title="Ljud av/på">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 9.5V14a1 1 0 0 1-1 1H4v1h16v-1h-1a1 1 0 0 1-1-1V9.5a6 6 0 0 0-12 0zM10 18.5a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path class="sound-off" d="M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button type="button" class="timer-icon" id="timer-close" aria-label="Stäng timern">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="timer-body">
+    <div class="timer-dial">
+      <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="ring-track" cx="100" cy="100" r="90"/>
+        <circle class="ring-window" id="ring-window" cx="100" cy="100" r="90"/>
+        <circle class="ring-progress" id="ring-progress" cx="100" cy="100" r="90"/>
+      </svg>
+      <div class="timer-center">
+        <span class="timer-time" id="timer-time"></span>
+        <span class="timer-status" id="timer-status" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="timer-controls">
+      <button type="button" class="timer-nav" id="timer-prev" aria-label="Föregående steg">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" class="timer-main" id="timer-main">Starta</button>
+      <button type="button" class="timer-nav" id="timer-next" aria-label="Nästa steg">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+    <div class="timer-steps" id="timer-steps" role="group" aria-label="Steg"></div>
+    </div>
+  </div>
+
+  <script src="vendor/component-relay.js?v=1.7.0"></script>
+  <script src="te.js?v=1.7.0"></script>
 </body>
 </html>

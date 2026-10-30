@@ -19,11 +19,13 @@
  *
  * Rader som inte är fält (t.ex. något som skrivits i en annan editor) ligger kvar
  * oförändrade: i sitt te om de står i ett block med fält, annars sist.
+ *
+ * Timern (längst ner) följer gong fu-schemat eller teets bryggtid och sparar inget.
  */
 (function () {
   'use strict';
 
-  var VERSION = '1.6.0';
+  var VERSION = '1.7.0';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var PREVIEW_LENGTH = 90;
@@ -64,32 +66,22 @@
   // Butiker som alltid finns som knappar; butiker som skrivits in på andra teer läggs till efter dem.
   var SHOPS = ['In the Mood for Tea', 'The Tea Centre'];
 
-  // Gong fu-scheman: [steg, anteckning, tid]. Vitt te får ett eget schema med längre
-  // dragningar, eftersom knopparna släpper smak långsamt; alla andra sorter får standard.
+  // Gong fu-scheman i sekunder: sköljning, infusion 1–5 som [kortast, längst], och sedan
+  // `extra` sekunder till för varje infusion efter den femte. Vitt te får ett eget schema med
+  // längre dragningar, eftersom knopparna släpper smak långsamt; alla andra sorter får standard.
+  // Tabellen i teet och timern byggs båda härifrån.
   var BREW_SCHEDULES = {
     standard: {
       title: 'Gong fu',
-      rows: [
-        ['First rinse', '(pouring away)', '5–10 sec'],
-        ['Infusion 1', '', '10–15 sec'],
-        ['Infusion 2', '', '5–10 sec'],
-        ['Infusion 3', '', '10–15 sec'],
-        ['Infusion 4', '', '15–20 sec'],
-        ['Infusion 5', '', '20–30 sec'],
-        ['Infusion 6+', '', '+10 sec per extra infusion']
-      ]
+      rinse: { note: '(pouring away)', lo: 5, hi: 10 },
+      infusions: [[10, 15], [5, 10], [10, 15], [15, 20], [20, 30]],
+      extra: 10
     },
     white: {
       title: 'Gong fu · vitt te',
-      rows: [
-        ['First rinse', '(pouring away, can be skipped)', '10 sec'],
-        ['Infusion 1', '', '20–30 sec'],
-        ['Infusion 2', '', '15–20 sec'],
-        ['Infusion 3', '', '20–25 sec'],
-        ['Infusion 4', '', '30–35 sec'],
-        ['Infusion 5', '', '40–50 sec'],
-        ['Infusion 6+', '', '+10 sec per extra infusion']
-      ]
+      rinse: { note: '(pouring away, can be skipped)', lo: 10, hi: 10 },
+      infusions: [[20, 30], [15, 20], [20, 25], [30, 35], [40, 50]],
+      extra: 10
     }
   };
 
@@ -253,6 +245,28 @@
     return oneLine(value).toLowerCase()
       .replace(/\s*(°c|°|grader|minuter|minut|min)\.?$/, '')
       .replace(/\s*[-–—]\s*/, '-');
+  }
+
+  /**
+   * Bryggtiden i sekunder för timern: "3" → 180, "2-3" → 120–180, "1,5" → 90,
+   * "30 sek" → 30. Utan enhet räknas minuter. Annan text ger null (ingen timer).
+   */
+  function parseBrewTime(value) {
+    var text = oneLine(value).toLowerCase().replace(/,/g, '.');
+    var m = /^(\d+(?:\.\d+)?)\s*(?:[-–—]\s*(\d+(?:\.\d+)?))?\s*(minuter|minut|min|m|sekunder|sekund|sek|sec|s)?\.?$/.exec(text);
+    if (!m) return null;
+    var factor = m[3] && m[3].charAt(0) === 's' ? 1 : 60;
+    var lo = Math.round(parseFloat(m[1]) * factor);
+    var hi = m[2] ? Math.round(parseFloat(m[2]) * factor) : lo;
+    if (!lo || hi < lo || hi > 3600) return null;
+    return { lo: lo, hi: hi };
+  }
+
+  /** Ett intervall i sekunder som text: "10–15 s", "2–3 min", "1,5 min". */
+  function rangeText(lo, hi) {
+    if (hi < 60) return (lo === hi ? lo : lo + '–' + hi) + ' s';
+    var min = function (sec) { return String(Math.round(sec / 6) / 10).replace('.', ','); };
+    return (lo === hi ? min(lo) : min(lo) + '–' + min(hi)) + ' min';
   }
 
   /** "honung, Persika ;blommig" → ["honung", "Persika", "blommig"]. */
@@ -554,12 +568,24 @@
       return;
     }
 
+    // Ett tryck på ett steg i gong fu-schemat startar timern där.
+    var stepRow = event.target.closest('.brew tr[data-step]');
+    if (stepRow) {
+      openTimer(state.teas[index], 'gongfu', Number(stepRow.getAttribute('data-step')));
+      return;
+    }
+
     var button = event.target.closest('[data-action], [data-value]');
     if (!button) return;
     var action = button.getAttribute('data-action');
 
     if (action === 'collapse') {
       collapseAndShow(index);
+      return;
+    }
+    // Timern ändrar inget i anteckningen, så den fungerar även när den är låst.
+    if (action === 'timer-gongfu' || action === 'timer-western') {
+      openTimer(state.teas[index], action === 'timer-gongfu' ? 'gongfu' : 'western', 0);
       return;
     }
     if (!editable()) return;
@@ -1033,10 +1059,28 @@
     // Bryggschemat syns i det utfällda teet när det passar för gong fu.
     var brew = card.querySelector('.brew');
     brew.hidden = !tea.values.gongfu;
-    if (tea.values.gongfu) renderBrew(brew, g.key === 'k:Vitt' ? 'white' : 'standard');
+    card.querySelector('.brew-hint').hidden = !tea.values.gongfu;
+    if (tea.values.gongfu) renderBrew(brew, scheduleName(tea));
+
+    // Timerknapparna överst i det utfällda teet: gong fu och vanlig bryggning.
+    var western = parseBrewTime(tea.values.bryggtid);
+    var gongfuBtn = card.querySelector('[data-action="timer-gongfu"]');
+    var westernBtn = card.querySelector('[data-action="timer-western"]');
+    gongfuBtn.hidden = !tea.values.gongfu;
+    westernBtn.hidden = !western;
+    if (western) westernBtn.querySelector('.timer-btn-label').textContent = rangeText(western.lo, western.hi);
+    card.querySelector('.brew-bar').hidden = gongfuBtn.hidden && westernBtn.hidden;
   }
 
-  /** Fyller schemat; byggs bara om när det byter schema (t.ex. när sorten blir Vitt). */
+  /** Vitt te har ett eget gong fu-schema. */
+  function scheduleName(tea) {
+    return groupFor(tea.values.sort).key === 'k:Vitt' ? 'white' : 'standard';
+  }
+
+  /**
+   * Fyller schemat; byggs bara om när det byter schema (t.ex. när sorten blir Vitt).
+   * Varje rad har sitt steg (0 = sköljning), så att ett tryck startar timern där.
+   */
   function renderBrew(table, name) {
     if (table.getAttribute('data-schedule') === name) return;
     table.setAttribute('data-schedule', name);
@@ -1044,8 +1088,13 @@
     table.querySelector('caption').textContent = schedule.title;
     var body = table.querySelector('tbody');
     body.textContent = '';
-    schedule.rows.forEach(function (row) {
+    var rows = [['First rinse', schedule.rinse.note, secText(schedule.rinse.lo, schedule.rinse.hi)]];
+    schedule.infusions.forEach(function (r, i) { rows.push(['Infusion ' + (i + 1), '', secText(r[0], r[1])]); });
+    rows.push(['Infusion ' + (schedule.infusions.length + 1) + '+', '', '+' + schedule.extra + ' sec per extra infusion']);
+    rows.forEach(function (row, step) {
       var tr = document.createElement('tr');
+      tr.setAttribute('data-step', String(step));
+      tr.title = 'Starta timern här';
       var th = document.createElement('th');
       th.scope = 'row';
       th.textContent = row[0];
@@ -1062,6 +1111,11 @@
       tr.appendChild(td);
       body.appendChild(tr);
     });
+  }
+
+  /** "10–15 sec", eller "10 sec" när kortast och längst är samma. */
+  function secText(lo, hi) {
+    return (lo === hi ? lo : lo + '–' + hi) + ' sec';
   }
 
   /**
@@ -1152,4 +1206,344 @@
     el.saveState.textContent = label;
     el.saveState.className = 'save-state' + (kind ? ' ' + kind : '');
   }
+
+  // ---------- Timer ----------
+  //
+  // Gong fu: stegar genom schemat (sköljning, infusion 1–5, sedan +10 s per infusion).
+  // Vanlig bryggning: ett steg med teets bryggtid. Timern räknar ner till den kortaste tiden
+  // i intervallet; vid noll är det dags att hälla (ljud och vibration), och sedan räknas
+  // sekunderna uppåt: grönt så länge man är inom intervallet, orange efter det. Tiden räknas
+  // från klockan och inte från antalet tick, så den stämmer även om webbläsaren saktar ner.
+  // Inget av detta sparas i anteckningen.
+
+  var SOUND_KEY = 'se.jagemyr.te.ljud';
+  var TICK_MS = 200;
+  var OVERTIME_STOP = 600;
+  var CIRCUMFERENCE = 2 * Math.PI * 90;
+
+  var tm = {
+    root: document.getElementById('timer'),
+    tea: document.getElementById('timer-tea'),
+    step: document.getElementById('timer-step'),
+    note: document.getElementById('timer-note'),
+    time: document.getElementById('timer-time'),
+    status: document.getElementById('timer-status'),
+    main: document.getElementById('timer-main'),
+    prev: document.getElementById('timer-prev'),
+    next: document.getElementById('timer-next'),
+    close: document.getElementById('timer-close'),
+    sound: document.getElementById('timer-sound'),
+    steps: document.getElementById('timer-steps'),
+    ringWindow: document.getElementById('ring-window'),
+    ringProgress: document.getElementById('ring-progress')
+  };
+
+  var timer = null;
+  var tickHandle = null;
+  var audio = null;
+  var wakeLock = null;
+  var signalCount = 0;
+  var soundOn = loadPref(SOUND_KEY) !== '0';
+
+  function openTimer(tea, kind, index) {
+    var western = parseBrewTime(tea.values.bryggtid);
+    if (kind === 'western' && !western) return;
+    timer = {
+      name: oneLine(tea.values.namn) || 'Te',
+      kind: kind,
+      schedule: BREW_SCHEDULES[scheduleName(tea)],
+      western: western,
+      index: kind === 'western' ? 0 : Math.max(0, index || 0),
+      elapsed: 0,
+      startedAt: 0,
+      running: false,
+      firedLo: false,
+      firedHi: false,
+      opener: document.activeElement
+    };
+    unlockAudio();
+    tm.root.hidden = false;
+    document.body.classList.add('timer-open');
+    clearInterval(tickHandle);
+    tickHandle = setInterval(timerTick, TICK_MS);
+    renderTimer();
+    tm.main.focus();
+  }
+
+  function closeTimer() {
+    if (!timer) return;
+    var opener = timer.opener;
+    timer = null;
+    clearInterval(tickHandle);
+    tickHandle = null;
+    releaseWakeLock();
+    tm.root.hidden = true;
+    document.body.classList.remove('timer-open');
+    if (opener && document.body.contains(opener) && opener.focus) opener.focus();
+  }
+
+  /** Steg `index` i timern: { label, note, lo, hi } i sekunder. */
+  function timerStep(index) {
+    if (timer.kind === 'western') return { label: 'Vanlig bryggning', note: '', lo: timer.western.lo, hi: timer.western.hi };
+    var s = timer.schedule;
+    if (index === 0) return { label: 'First rinse', note: s.rinse.note, lo: s.rinse.lo, hi: s.rinse.hi };
+    if (index <= s.infusions.length) {
+      var r = s.infusions[index - 1];
+      return { label: 'Infusion ' + index, note: '', lo: r[0], hi: r[1] };
+    }
+    var last = s.infusions[s.infusions.length - 1];
+    var add = (index - s.infusions.length) * s.extra;
+    return { label: 'Infusion ' + index, note: '+' + s.extra + ' sec per extra infusion', lo: last[0] + add, hi: last[1] + add };
+  }
+
+  function timerElapsed() {
+    return timer.elapsed + (timer.running ? (Date.now() - timer.startedAt) / 1000 : 0);
+  }
+
+  function startTimer() {
+    unlockAudio();
+    timer.running = true;
+    timer.startedAt = Date.now();
+    requestWakeLock();
+    renderTimer();
+  }
+
+  function pauseTimer() {
+    timer.elapsed = timerElapsed();
+    timer.running = false;
+    renderTimer();
+  }
+
+  function goToStep(index, autostart) {
+    timer.index = timer.kind === 'western' ? 0 : Math.max(0, index);
+    timer.elapsed = 0;
+    timer.running = false;
+    timer.firedLo = false;
+    timer.firedHi = false;
+    if (autostart) startTimer(); else renderTimer();
+  }
+
+  /** Läget just nu: brew (före kortaste tiden), window (inom intervallet), over (efter). */
+  function timerPhase(step, elapsed) {
+    if (elapsed < step.lo) return 'brew';
+    if (elapsed <= step.hi) return 'window';
+    return 'over';
+  }
+
+  function timerTick() {
+    if (!timer) return;
+    if (timer.running) {
+      var step = timerStep(timer.index);
+      var e = timerElapsed();
+      if (!timer.firedLo && e >= step.lo) {
+        timer.firedLo = true;
+        signal(true);
+      }
+      if (!timer.firedHi && step.hi > step.lo && e >= step.hi) {
+        timer.firedHi = true;
+        signal(false);
+      }
+      // Glömd timer: stanna efter tio minuter över tiden.
+      if (e > step.hi + OVERTIME_STOP) pauseTimer();
+    }
+    renderTimer();
+  }
+
+  /** Huvudknappen: Starta, Paus, Fortsätt, och efter nolltid Starta nästa infusion (eller Klar). */
+  function mainAction() {
+    var step = timerStep(timer.index);
+    var phase = timerPhase(step, timerElapsed());
+    if (phase !== 'brew') {
+      if (timer.kind === 'western') closeTimer(); else goToStep(timer.index + 1, true);
+    } else if (timer.running) {
+      pauseTimer();
+    } else {
+      startTimer();
+    }
+  }
+
+  function mainLabel(step, phase, elapsed) {
+    if (phase !== 'brew') return timer.kind === 'western' ? 'Klar' : 'Starta ' + timerStep(timer.index + 1).label.toLowerCase();
+    if (timer.running) return 'Paus';
+    return elapsed > 0 ? 'Fortsätt' : 'Starta';
+  }
+
+  /** Sekunder som "12" eller, när steget är minst en minut, "1:05". */
+  function clock(seconds, minutes) {
+    if (!minutes) return String(seconds);
+    return Math.floor(seconds / 60) + ':' + pad2(seconds % 60);
+  }
+
+  function pad2(n) {
+    return (n < 10 ? '0' : '') + n;
+  }
+
+  function renderTimer() {
+    if (!timer) return;
+    var step = timerStep(timer.index);
+    var e = timerElapsed();
+    var phase = timerPhase(step, e);
+    var minutes = step.hi >= 60;
+
+    tm.tea.textContent = timer.name;
+    tm.step.textContent = step.label;
+    tm.note.textContent = step.note;
+    tm.note.hidden = !step.note;
+
+    var text;
+    if (phase === 'brew') text = clock(Math.max(0, Math.ceil(step.lo - e - 1e-6)), minutes);
+    else text = '+' + clock(Math.floor(e - step.lo), minutes);
+    if (tm.time.textContent !== text) tm.time.textContent = text;
+
+    var status;
+    if (phase === 'window') status = 'Häll nu';
+    else if (phase === 'over') status = 'Över tiden (' + rangeText(step.lo, step.hi) + ')';
+    else if (timer.running) status = 'Brygger · häll efter ' + rangeText(step.lo, step.hi);
+    else if (e > 0) status = 'Pausad';
+    else status = 'Häll efter ' + rangeText(step.lo, step.hi) + '. Tryck Starta när vattnet är i.';
+    if (tm.status.textContent !== status) tm.status.textContent = status;
+
+    ['brew', 'window', 'over'].forEach(function (p) { tm.root.classList.toggle('phase-' + p, p === phase); });
+    tm.root.classList.toggle('running', timer.running);
+
+    // Ringen: hela varvet är den längsta tiden; den gröna biten är intervallet.
+    var start = step.hi ? step.lo / step.hi : 1;
+    tm.ringWindow.style.strokeDasharray = ((1 - start) * CIRCUMFERENCE) + ' ' + CIRCUMFERENCE;
+    tm.ringWindow.style.strokeDashoffset = String(-start * CIRCUMFERENCE);
+    var fraction = step.hi ? Math.min(e / step.hi, 1) : 1;
+    tm.ringProgress.style.strokeDasharray = (fraction * CIRCUMFERENCE) + ' ' + CIRCUMFERENCE;
+
+    tm.main.textContent = mainLabel(step, phase, e);
+    var gongfu = timer.kind === 'gongfu';
+    tm.prev.hidden = !gongfu;
+    tm.next.hidden = !gongfu;
+    tm.prev.disabled = timer.index === 0;
+    tm.sound.setAttribute('aria-pressed', String(soundOn));
+    renderTimerSteps(gongfu);
+  }
+
+  /** Stegknapparna under timern: Skölj, 1–5 och 6+. */
+  function renderTimerSteps(gongfu) {
+    tm.steps.hidden = !gongfu;
+    if (!gongfu) return;
+    var count = timer.schedule.infusions.length;
+    if (tm.steps.children.length !== count + 2) {
+      tm.steps.textContent = '';
+      for (var i = 0; i <= count + 1; i++) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'timer-chip';
+        b.setAttribute('data-step', String(i));
+        b.textContent = i === 0 ? 'Skölj' : i > count ? count + 1 + '+' : String(i);
+        tm.steps.appendChild(b);
+      }
+    }
+    Array.prototype.forEach.call(tm.steps.children, function (b, i) {
+      var current = i === timer.index || (i === count + 1 && timer.index > count);
+      b.setAttribute('aria-pressed', String(current));
+      b.classList.toggle('done', i < timer.index && !current);
+    });
+  }
+
+  // ---------- Signal: ljud, vibration och en blink ----------
+
+  function unlockAudio() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!audio && Ctx) audio = new Ctx();
+      if (audio && audio.state === 'suspended') audio.resume();
+    } catch (e) {
+      audio = null;
+    }
+  }
+
+  function beep(times, frequency) {
+    if (!soundOn || !audio) return;
+    try {
+      var t0 = audio.currentTime + 0.02;
+      for (var i = 0; i < times; i++) {
+        var osc = audio.createOscillator();
+        var gain = audio.createGain();
+        var t = t0 + i * 0.28;
+        osc.type = 'sine';
+        osc.frequency.value = frequency;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+        osc.connect(gain);
+        gain.connect(audio.destination);
+        osc.start(t);
+        osc.stop(t + 0.22);
+      }
+    } catch (e) {
+      // Inget ljud; blinken och vibrationen räcker.
+    }
+  }
+
+  /** Stark signal när det är dags att hälla, svag när intervallet är slut. */
+  function signal(strong) {
+    signalCount++;
+    tm.root.setAttribute('data-signals', String(signalCount));
+    beep(strong ? 3 : 1, strong ? 880 : 587);
+    try {
+      if (navigator.vibrate) navigator.vibrate(strong ? [200, 100, 200] : 150);
+    } catch (e) { /* ingen vibration */ }
+    tm.root.classList.remove('flash');
+    void tm.root.offsetWidth;
+    tm.root.classList.add('flash');
+  }
+
+  // Skärmen ska inte slockna medan timern går (där webbläsaren tillåter det).
+  function requestWakeLock() {
+    try {
+      if (!navigator.wakeLock || wakeLock) return;
+      navigator.wakeLock.request('screen').then(function (lock) {
+        wakeLock = lock;
+        lock.addEventListener('release', function () { wakeLock = null; });
+      }).catch(function () { /* inte tillåtet i den här webbvyn */ });
+    } catch (e) { /* inte tillåtet */ }
+  }
+
+  function releaseWakeLock() {
+    try { if (wakeLock) wakeLock.release(); } catch (e) { /* redan släppt */ }
+    wakeLock = null;
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && timer) {
+      if (timer.running) requestWakeLock();
+      timerTick();
+    }
+  });
+
+  tm.main.addEventListener('click', function () { if (timer) mainAction(); });
+  tm.prev.addEventListener('click', function () { if (timer && timer.index > 0) goToStep(timer.index - 1, false); });
+  tm.next.addEventListener('click', function () { if (timer) goToStep(timer.index + 1, false); });
+  tm.close.addEventListener('click', closeTimer);
+  tm.sound.addEventListener('click', function () {
+    soundOn = !soundOn;
+    storePref(SOUND_KEY, soundOn ? '' : '0');
+    if (soundOn) { unlockAudio(); beep(1, 880); }
+    renderTimer();
+  });
+  tm.steps.addEventListener('click', function (event) {
+    var chip = event.target.closest('.timer-chip');
+    if (chip && timer) goToStep(Number(chip.getAttribute('data-step')), false);
+  });
+  tm.root.addEventListener('keydown', function (event) {
+    if (!timer) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeTimer();
+    } else if (event.key === ' ' && event.target === tm.root) {
+      event.preventDefault();
+      mainAction();
+    } else if (event.key === 'ArrowRight' && timer.kind === 'gongfu') {
+      event.preventDefault();
+      goToStep(timer.index + 1, false);
+    } else if (event.key === 'ArrowLeft' && timer.kind === 'gongfu' && timer.index > 0) {
+      event.preventDefault();
+      goToStep(timer.index - 1, false);
+    }
+  });
 })();
