@@ -24,7 +24,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '2.6.0';
+  var VERSION = '2.6.1';
   var NOT_CONNECTED_HINT_MS = 2500;
   var CONFIRM_MS = 3000;
   var SETTLE_MS = 700;
@@ -489,6 +489,9 @@
   }
 
   // ---------- Anslutning ----------
+
+  // Versionen längst ner till höger, så att man ser vilken version varje enhet kör.
+  document.getElementById('version').textContent = 'v' + VERSION;
 
   var relay = new ComponentRelay({
     targetWindow: window,

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NWO (jagemyr)</title>
-  <link rel="stylesheet" href="nwo.css?v=2.6.0">
+  <link rel="stylesheet" href="nwo.css?v=2.6.1">
 </head>
 <body>
   <main class="page">
@@ -46,7 +46,10 @@
 
   <footer class="status" role="status" aria-live="polite">
     <span id="count">0 beställningar</span>
-    <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
+    <span class="status-right">
+      <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
+      <span class="version" id="version" title="Version av pluginet på den här enheten"></span>
+    </span>
   </footer>
 
   <template id="order-template">
@@ -164,7 +167,7 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=2.6.0"></script>
-  <script src="nwo.js?v=2.6.0"></script>
+  <script src="vendor/component-relay.js?v=2.6.1"></script>
+  <script src="nwo.js?v=2.6.1"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@
 (function () {
   'use strict';
 
+  var VERSION = '1.5.1';
   var C = window.TodoCore;
   var COMPLETE_ANIMATION_MS = 350;
   var CONFIRM_MS = 3000;
@@ -130,7 +131,7 @@
     var ref = '';
     try { ref = document.referrer ? new URL(document.referrer).origin : '(tom)'; } catch (e) { ref = '(ogiltig)'; }
     return [
-      'Version: 1.5.0',
+      'Version: ' + VERSION,
       'WebView: ' + (m ? 'Chrome ' + m[1] : navigator.userAgent.slice(0, 80)),
       'I iframe: ' + (window.parent !== window),
       'Referrer: ' + ref,
@@ -139,6 +140,9 @@
       'Fel: ' + (diagInfo.errors.length ? diagInfo.errors.join(' | ') : 'inga')
     ].join('\n');
   }
+
+  // Versionen längst ner till höger, så att man ser vilken version varje enhet kör.
+  document.getElementById('version').textContent = 'v' + VERSION;
 
   var relay = new ComponentRelay({
     targetWindow: window,

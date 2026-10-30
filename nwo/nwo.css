@@ -517,6 +517,22 @@ button, input { font: inherit; color: inherit; }
   white-space: nowrap;
 }
 
+/* Antalet kortas av hellre än att versionen trycks ut. */
+#count {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-right {
+  flex: none;
+  display: flex;
+  gap: 10px;
+}
+
+/* Versionen som körs på den här enheten (VERSION i JS-filen). */
+.version { opacity: 0.75; }
+
 .save-state.saved { color: var(--accent); }
 .save-state.error { color: var(--danger); font-weight: 600; }
 

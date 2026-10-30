@@ -279,8 +279,9 @@ Ett plugin som inte passar någon annan typ får `unknown`.
 
 Höj `version` i pluginets `ext.json` och `?v=` i `url` och i `index.html` när något ändras, så att appen inte visar cachade filer. Standard Notes läser `latest_url` och hämtar nya versioner.
 
-Te visar sin version längst ner till höger (t.ex. *v1.7.2*). Den kommer från `VERSION` i `te.js`, alltså koden som
-faktiskt körs, så höj den också. Visar en enhet en äldre version än `ext.json`: stäng anteckningen och öppna den igen.
+Varje plugin visar sin version längst ner till höger (t.ex. *v1.7.2*). Den kommer från `VERSION` i pluginets
+JS-fil (`todo.js`, `nwo.js`, `te.js`), alltså koden som faktiskt körs, så höj den också. Visar en enhet en äldre
+version än `ext.json`: stäng anteckningen och öppna den igen, och starta annars om Standard Notes.
 
 ## Licens
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Todo (jagemyr)</title>
-  <link rel="stylesheet" href="todo.css?v=1.5.0">
+  <link rel="stylesheet" href="todo.css?v=1.5.1">
 </head>
 <body>
   <div class="add" id="add-form">
@@ -54,7 +54,10 @@
 
   <footer class="status" role="status" aria-live="polite">
     <span id="counts">0 kvar</span>
-    <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
+    <span class="status-right">
+      <span id="save-state" class="save-state">Väntar på Standard Notes…</span>
+      <span class="version" id="version" title="Version av pluginet på den här enheten"></span>
+    </span>
   </footer>
 
   <template id="task-template">
@@ -139,8 +142,8 @@
     </li>
   </template>
 
-  <script src="vendor/component-relay.js?v=1.5.0"></script>
-  <script src="core.js?v=1.5.0"></script>
-  <script src="todo.js?v=1.5.0"></script>
+  <script src="vendor/component-relay.js?v=1.5.1"></script>
+  <script src="core.js?v=1.5.1"></script>
+  <script src="todo.js?v=1.5.1"></script>
 </body>
 </html>
