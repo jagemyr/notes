@@ -12,6 +12,9 @@
   --success: var(--sn-stylekit-success-color, #1f9d5c);
   /* Fyll på: orange, så att det skiljer sig från gröna Gong fu. */
   --refill: var(--sn-stylekit-warning-color, #d9822b);
+  /* Sigillets röda färg (cinnober), samma i ljust och mörkt tema. */
+  --seal-red: #b3322b;
+  --seal-ink: #fbf3e6;
   --bar-bg: var(--sn-stylekit-background-color, #f7f7f9);
   --field-bg: var(--sn-stylekit-contrast-background-color, #f2f2f5);
   --font: var(--sn-stylekit-sans-serif-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
@@ -335,7 +338,61 @@ button, input { font: inherit; color: inherit; }
 }
 
 .add-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 600px;
   padding: 12px max(var(--gutter), env(safe-area-inset-right)) 24px max(var(--gutter), env(safe-area-inset-left));
+}
+
+/* ---------- 茶 som sigill ---------- */
+
+/*
+ * Tecknet 茶 (chá, te) penselskrivet i Ma Shan Zheng (SIL Open Font License, se fonts/OFL.txt).
+ * Filen innehåller bara det tecknet (1,2 kB), så det ser likadant ut på alla enheter.
+ */
+@font-face {
+  font-family: 'TeCha';
+  src: url('fonts/cha.woff2') format('woff2');
+  unicode-range: U+8336;
+  font-display: block;
+}
+
+/* Vit skrift på rött, med en tunn ljus ram innanför kanten, lite snett som en handstämpel. */
+.seal {
+  --seal-size: 40px;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: var(--seal-size);
+  height: var(--seal-size);
+  border-radius: calc(var(--seal-size) * 0.1);
+  background: var(--seal-red);
+  color: var(--seal-ink);
+  font-family: 'TeCha', 'Kaiti SC', 'STKaiti', 'KaiTi', 'BiauKai', serif;
+  font-size: calc(var(--seal-size) * 0.8);
+  font-weight: 400;
+  line-height: 1;
+  box-shadow:
+    inset 0 0 0 calc(var(--seal-size) * 0.035) var(--seal-red),
+    inset 0 0 0 calc(var(--seal-size) * 0.06) color-mix(in srgb, var(--seal-ink) 55%, transparent);
+  transform: rotate(-3deg);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* I hörnet bredvid Nytt te, som stämpeln på en tavla. */
+.seal-corner {
+  --seal-size: 38px;
+  margin-left: auto;
+  transform: rotate(-5deg);
+  opacity: 0.92;
+}
+
+.seal-timer {
+  --seal-size: 46px;
+  margin: 2px 10px 0 0;
 }
 
 .add-tea {

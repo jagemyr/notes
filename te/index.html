@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Te (jagemyr)</title>
-  <link rel="stylesheet" href="te.css?v=1.7.4">
+  <link rel="stylesheet" href="te.css?v=1.8.0">
 </head>
 <body>
   <nav class="filters" id="filters-bar" aria-label="Sök och filtrera teer" hidden>
@@ -38,6 +38,7 @@
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
         Nytt te
       </button>
+      <span class="seal seal-corner" lang="zh-Hans" title="茶 – chá, te" aria-hidden="true">茶</span>
     </div>
   </main>
 
@@ -159,6 +160,7 @@
   <!-- Bryggtimern. Fylls i och styrs av te.js; sparar inget i anteckningen. -->
   <div class="timer" id="timer" role="dialog" aria-modal="true" aria-labelledby="timer-tea" tabindex="-1" hidden>
     <div class="timer-head">
+      <span class="seal seal-timer" lang="zh-Hans" title="茶 – chá, te" aria-hidden="true">茶</span>
       <div class="timer-titles">
         <p class="timer-tea" id="timer-tea"></p>
         <p class="timer-step"><span id="timer-step"></span> <span class="timer-note" id="timer-note"></span></p>
@@ -198,7 +200,7 @@
     </div>
   </div>
 
-  <script src="vendor/component-relay.js?v=1.7.4"></script>
-  <script src="te.js?v=1.7.4"></script>
+  <script src="vendor/component-relay.js?v=1.8.0"></script>
+  <script src="te.js?v=1.8.0"></script>
 </body>
 </html>
